@@ -10,7 +10,7 @@ public:
     ~GraphicsContext();
     
     void drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b);
-    void drawLine(int x1, int y1, int x2, int y2);
+    void drawLine(int xa, int ya, int xb, int yb);
 
 private:
     Device *device;

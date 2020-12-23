@@ -19,8 +19,8 @@ FrameBuffer::~FrameBuffer()
         return;
     }
 
-    if (m_frameBufferInfo->memoryPtr != nullptr) {
-        munmap(m_frameBufferInfo->memoryPtr, m_frameBufferInfo->bufferSize());
+    if (m_frameBufferInfo->mappedMemory != nullptr) {
+        munmap(m_frameBufferInfo->mappedMemory, m_frameBufferInfo->bufferSize());
     }
 
     delete m_frameBufferInfo;
@@ -46,13 +46,13 @@ void FrameBuffer::openDevice()
 
     // Map fb file to memory
     long bufferSize = m_frameBufferInfo->bufferSize();
-    uint8_t *memoryPtr = (uint8_t *)mmap(0, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)0);
-    if (memoryPtr == MAP_FAILED) {
+    uint8_t *mappedMemory = (uint8_t *)mmap(0, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)0);
+    if (mappedMemory == MAP_FAILED) {
         cerr << "Couldn't map fb file to memory (errno: " << errno << ")" << endl;
         return;
     }
     
-    m_frameBufferInfo->memoryPtr = memoryPtr;
+    m_frameBufferInfo->mappedMemory = mappedMemory;
 
     fb_var_screeninfo varInfo = m_frameBufferInfo->screenVarInfo;
     fb_fix_screeninfo fixedInfo = m_frameBufferInfo->screenFixedInfo;
@@ -67,10 +67,10 @@ void FrameBuffer::openDevice()
 void FrameBuffer::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
 {
     assert(m_frameBufferInfo);
-    assert(m_frameBufferInfo->memoryPtr);
+    assert(m_frameBufferInfo->mappedMemory);
 
     long bufferIndex = m_frameBufferInfo->bufferIndexForCoordinates(x, y);
-    uint8_t *bufferStart = (uint8_t *)m_frameBufferInfo->memoryPtr;
+    uint8_t *bufferStart = (uint8_t *)m_frameBufferInfo->mappedMemory;
     *((uint32_t *)(bufferStart + bufferIndex)) = pixelColorFromRGBComponents(r, g, b);
 }
 

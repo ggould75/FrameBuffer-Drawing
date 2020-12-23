@@ -20,7 +20,7 @@ private:
     struct FBInfo
     {
         int fd {-1};
-        void *memoryPtr {nullptr};
+        void *mappedMemory {nullptr};
         struct fb_var_screeninfo screenVarInfo;
         struct fb_fix_screeninfo screenFixedInfo;
         unsigned bytesPerPixel;
