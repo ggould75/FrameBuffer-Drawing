@@ -1,10 +1,3 @@
-//
-//  Device.hpp
-//  FrameBuffer-Drawing
-//
-//  Created by Marco Mussini on 22/12/2020.
-//
-
 #ifndef Device_hpp
 #define Device_hpp
 

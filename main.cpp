@@ -1,10 +1,3 @@
-//
-//  main.cpp
-//  LowLevelDrawing
-//
-//  Created by Marco Mussini on 22/12/2020.
-//
-
 #include "GraphicsContext.hpp"
 
 int main(int argc, const char * argv[]) {
