@@ -3,11 +3,11 @@
 
 #include "Device.hpp"
 
-class ScanConverter;
+class GraphicsContextPrivate;
 
 class GraphicsContext
 {
-    friend class ScanConverter;
+    friend class GraphicsContextPrivate;
     
 public:
     GraphicsContext();
@@ -19,7 +19,7 @@ public:
 
 private:
     Device *device;
-    ScanConverter *scanConverter;
+    GraphicsContextPrivate *d_ptr;
 };
 
 #endif // GRAPHICSCONTEXT_H

@@ -57,8 +57,9 @@ void FrameBuffer::openDevice()
     fb_var_screeninfo varInfo = m_frameBufferInfo->screenVarInfo;
     fb_fix_screeninfo fixedInfo = m_frameBufferInfo->screenFixedInfo;
     
-    cout << varInfo.xres_virtual << " x " << varInfo.yres_virtual 
-         << ", Framebuffer size: ~" << bufferSize / 1024 / 1024 << " MB"
+    cout << "Visible res: " << varInfo.xres << " x " << varInfo.yres  
+         << ", Virtual res: " << varInfo.xres_virtual << " x " << varInfo.yres_virtual << endl
+         << "Framebuffer size: ~" << bufferSize / 1024 / 1024 << " MB"
          << ", Bytes/scanline: " << fixedInfo.line_length
          << ", grayscale: " << varInfo.grayscale
          << ", bpp: " << varInfo.bits_per_pixel << endl;

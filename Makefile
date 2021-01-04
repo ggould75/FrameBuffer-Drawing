@@ -1,2 +1,2 @@
 default:
-	g++ -o fbd FrameBuffer.cpp GraphicsContext.cpp ScanConverter.cpp main.cpp
+	g++ -o fbd FrameBuffer.cpp GraphicsContext.cpp GraphicsContext_p.cpp main.cpp

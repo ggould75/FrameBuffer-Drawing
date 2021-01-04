@@ -1,17 +1,15 @@
 #include "GraphicsContext.hpp"
 #include "FrameBuffer.hpp"
-#include "ScanConverter.hpp"
+#include "GraphicsContext_p.hpp"
 
-GraphicsContext::GraphicsContext()
+GraphicsContext::GraphicsContext() : device(new FrameBuffer(0)), d_ptr(new GraphicsContextPrivate())
 {
-    device = new FrameBuffer(0);
     device->openDevice();
-    scanConverter = new ScanConverter();
 }
 
 GraphicsContext::~GraphicsContext()
 {
-    delete scanConverter;
+    delete d_ptr;
     delete device;
 }
 
@@ -22,13 +20,10 @@ void GraphicsContext::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
 
 void GraphicsContext::drawLine(int x0, int y0, int x1, int y1)
 {
-    scanConverter->bresenham(*this, x0, y0, x1, y1);
+    d_ptr->bresenham(*this, x0, y0, x1, y1);
 }
 
 void GraphicsContext::drawCircle(int centerX, int centerY, int radius)
 {
-    scanConverter->circleMidPoint(*this, centerX, centerY, radius);
+    d_ptr->circleMidPoint(*this, centerX, centerY, radius);
 }
-
-
-

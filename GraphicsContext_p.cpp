@@ -1,7 +1,7 @@
-#include "ScanConverter.hpp"
+#include "GraphicsContext_p.hpp"
 #include "GraphicsContext.hpp"
 
-void ScanConverter::bresenham(GraphicsContext& context, int x0, int y0, int x1, int y1)
+void GraphicsContextPrivate::bresenham(GraphicsContext& context, int x0, int y0, int x1, int y1)
 {
     int dx = abs(x0 - x1);
     int dy = abs(y0 - y1);
@@ -66,7 +66,7 @@ void circlePlotPoints(GraphicsContext& context, int centerX, int centerY, int x,
     context.drawPixel(centerX - y, centerY - x, 0xFF, 0x00, 0x00);
 }
 
-void ScanConverter::circleMidPoint(GraphicsContext& context, int centerX, int centerY, int radius)
+void GraphicsContextPrivate::circleMidPoint(GraphicsContext& context, int centerX, int centerY, int radius)
 {
     int x = 0;
     int y = radius;
