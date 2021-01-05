@@ -1,5 +1,6 @@
 #include <fcntl.h>
-
+#include <unistd.h>
+#include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 
@@ -8,11 +9,6 @@
 
 #include "FrameBuffer.hpp"
 
-FrameBuffer::FrameBuffer(short int fbNum = 0) : fbNum(fbNum)
-{
-
-}
-
 FrameBuffer::~FrameBuffer()
 {
     if (m_frameBufferInfo == nullptr) {
@@ -20,26 +16,32 @@ FrameBuffer::~FrameBuffer()
     }
 
     if (m_frameBufferInfo->mappedMemory != nullptr) {
-        munmap(m_frameBufferInfo->mappedMemory, m_frameBufferInfo->bufferSize());
+        close();
     }
 
     delete m_frameBufferInfo;
 }
 
-void FrameBuffer::openDevice()
+int FrameBuffer::open()
 {
     char devicePath[16];
+    
     sprintf(devicePath, "/dev/fb%d", fbNum);
-    int fd = open(devicePath, O_RDWR);
+    int fd = ::open(devicePath, O_RDWR);
     if (fd < 0) {
         cerr << "Error opening fb device! "
              << "Try launching with sudo or fb may not be enabled at kernel level." << endl;
-        return;
+        return -1;
     }
+    
+    return fd;
+}
 
+bool FrameBuffer::createFrameBuffer(int fd)
+{
     m_frameBufferInfo = new FBInfo();
     m_frameBufferInfo->fd = fd;
-
+    
     // Get variable and fixed screen info
     ioctl(fd, FBIOGET_VSCREENINFO, &m_frameBufferInfo->screenVarInfo);
     ioctl(fd, FBIOGET_FSCREENINFO, &m_frameBufferInfo->screenFixedInfo);
@@ -49,7 +51,8 @@ void FrameBuffer::openDevice()
     uint8_t *mappedMemory = (uint8_t *)mmap(0, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)0);
     if (mappedMemory == MAP_FAILED) {
         cerr << "Couldn't map fb file to memory (errno: " << errno << ")" << endl;
-        return;
+        ::close(fd);
+        return false;
     }
     
     m_frameBufferInfo->mappedMemory = mappedMemory;
@@ -57,12 +60,37 @@ void FrameBuffer::openDevice()
     fb_var_screeninfo varInfo = m_frameBufferInfo->screenVarInfo;
     fb_fix_screeninfo fixedInfo = m_frameBufferInfo->screenFixedInfo;
     
+    ::close(fd);
+    
+#ifdef ENABLE_DEBUG
     cout << "Visible res: " << varInfo.xres << " x " << varInfo.yres  
-         << ", Virtual res: " << varInfo.xres_virtual << " x " << varInfo.yres_virtual << endl
+         << ", Virtual res: " << varInfo.xres_virtual << " x " << varInfo.yres_virtual
+         << ", Offset: (" << varInfo.xoffset << ", " << varInfo.yoffset << ")" << endl
          << "Framebuffer size: ~" << bufferSize / 1024 / 1024 << " MB"
          << ", Bytes/scanline: " << fixedInfo.line_length
          << ", grayscale: " << varInfo.grayscale
          << ", bpp: " << varInfo.bits_per_pixel << endl;
+#endif
+         
+    return true;
+}
+
+bool FrameBuffer::initialize()
+{
+    int fd = open();
+    if (fd > 0) {
+        return createFrameBuffer(fd);
+    }
+    
+    return false;
+}
+
+void FrameBuffer::close()
+{
+    assert(m_frameBufferInfo);
+    assert(m_frameBufferInfo->mappedMemory);
+    
+    munmap(m_frameBufferInfo->mappedMemory, m_frameBufferInfo->bufferSize());
 }
 
 void FrameBuffer::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
@@ -80,6 +108,20 @@ uint32_t FrameBuffer::pixelColorFromRGBComponents(uint8_t r, uint8_t g, uint8_t 
     assert(m_frameBufferInfo);
 
     return m_frameBufferInfo->getPixelColor(r, g, b);
+}
+
+void FrameBuffer::clearScreen()
+{
+    assert(m_frameBufferInfo);
+    assert(m_frameBufferInfo->mappedMemory);
+    
+    void *bufferStart = m_frameBufferInfo->mappedMemory;
+    memset(bufferStart, 0, m_frameBufferInfo->bufferSize());
+    
+#ifdef ENABLE_DEBUG
+    cout.flags(ios::hex | ios::showbase);
+    cout <<  bufferStart << dec << ", size: " << m_frameBufferInfo->bufferSize() / 1024 / 1024 << endl;
+#endif
 }
 
 long FrameBuffer::FBInfo::bufferSize() {

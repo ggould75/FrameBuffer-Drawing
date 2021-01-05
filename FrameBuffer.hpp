@@ -8,14 +8,20 @@
 class FrameBuffer : public Device
 {
 public:
-    FrameBuffer(short int fbNum);
+    FrameBuffer(short int fbNum) : fbNum(fbNum) { }
     ~FrameBuffer();
     
+    bool initialize() override;
+    
+    void drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) override;
+    void clearScreen() override;
+    uint32_t pixelColorFromRGBComponents(uint8_t r, uint8_t g, uint8_t b) override;
 
-    void openDevice();
-    void drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b);
-    uint32_t pixelColorFromRGBComponents(uint8_t r, uint8_t g, uint8_t b);
-
+protected:
+    int open() override;
+    void close() override;
+    bool createFrameBuffer(int fd) override;
+    
 private:
     struct FBInfo
     {

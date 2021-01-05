@@ -1,9 +1,13 @@
 #include "GraphicsContext.hpp"
+
 #include <unistd.h>
 
-int main(int argc, const char * argv[]) {
-
+int main(int argc, const char * argv[]) 
+{
     GraphicsContext gc = GraphicsContext();
+    gc.setup();
+    
+    gc.clear();
     
     gc.drawPixel(100, 200, 0xFF, 0x00, 0x00);
     gc.drawPixel(100, 201, 0xFF, 0x00, 0x00);
@@ -27,7 +31,6 @@ int main(int argc, const char * argv[]) {
     gc.drawLine(1800, 1000, 800, 1000);
     gc.drawLine(800, 1000, 800, 300);
     
-    // circle
     gc.drawCircle(500, 200, 100);
     
     sleep(2);
