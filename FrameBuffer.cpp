@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <stddef.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 
@@ -8,6 +9,7 @@
 #include <iostream>
 
 #include "FrameBuffer.hpp"
+#include "common.h"
 
 FrameBuffer::~FrameBuffer()
 {
@@ -15,7 +17,7 @@ FrameBuffer::~FrameBuffer()
         return;
     }
 
-    if (m_frameBufferInfo->mappedMemory != nullptr) {
+    if (m_frameBufferInfo->frontBuffer != nullptr) {
         close();
     }
 
@@ -46,33 +48,56 @@ bool FrameBuffer::createFrameBuffer(int fd)
     ioctl(fd, FBIOGET_VSCREENINFO, &m_frameBufferInfo->screenVarInfo);
     ioctl(fd, FBIOGET_FSCREENINFO, &m_frameBufferInfo->screenFixedInfo);
 
-    // Map fb file to memory
-    long bufferSize = m_frameBufferInfo->bufferSize();
-    uint8_t *mappedMemory = (uint8_t *)mmap(0, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)0);
-    if (mappedMemory == MAP_FAILED) {
-        cerr << "Couldn't map fb file to memory (errno: " << errno << ")" << endl;
+    // Map fb file to memory.
+    // Note: enabling double buffer will cause mmap to fail on the majority of the graphics hardware (errno: 22)
+    long bufferSize = m_frameBufferInfo->totalBufferSize();
+    uint8_t *frontBuffer = (uint8_t *)mmap(0, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (off_t)0);
+    if (frontBuffer == MAP_FAILED) {
+        cerr << "Couldn't map fb (errno: " << errno << ")" << endl;
         ::close(fd);
         return false;
     }
     
-    m_frameBufferInfo->mappedMemory = mappedMemory;
-
+    m_frameBufferInfo->frontBuffer = frontBuffer;
+#if ENABLE_DOUBLE_BUFFER == 1
+    m_frameBufferInfo->backBuffer = frontBuffer + m_frameBufferInfo->screenBufferSize();
+#else
+    m_frameBufferInfo->backBuffer = frontBuffer;
+#endif
+    
     fb_var_screeninfo varInfo = m_frameBufferInfo->screenVarInfo;
     fb_fix_screeninfo fixedInfo = m_frameBufferInfo->screenFixedInfo;
     
     ::close(fd);
     
-#ifdef ENABLE_DEBUG
+#if ENABLE_DEBUG == 1
     cout << "Visible res: " << varInfo.xres << " x " << varInfo.yres  
          << ", Virtual res: " << varInfo.xres_virtual << " x " << varInfo.yres_virtual
          << ", Offset: (" << varInfo.xoffset << ", " << varInfo.yoffset << ")" << endl
          << "Framebuffer size: ~" << bufferSize / 1024 / 1024 << " MB"
          << ", Bytes/scanline: " << fixedInfo.line_length
          << ", grayscale: " << varInfo.grayscale
-         << ", bpp: " << varInfo.bits_per_pixel << endl;
+         << ", bpp: " << varInfo.bits_per_pixel << endl
+         << "Acceleration type: " << fixedInfo.accel << endl;
 #endif
          
     return true;
+}
+
+void FrameBuffer::swapBuffer()
+{
+    fb_var_screeninfo varInfo = m_frameBufferInfo->screenVarInfo;
+    if (varInfo.yoffset == 0)
+		varInfo.yoffset = m_frameBufferInfo->screenBufferSize();
+	else
+		varInfo.yoffset = 0;
+
+	// Pan to the back buffer
+	ioctl(m_frameBufferInfo->fd, FBIOPAN_DISPLAY, &varInfo);
+
+	void *tmpBuffer = m_frameBufferInfo->frontBuffer;
+	m_frameBufferInfo->frontBuffer = m_frameBufferInfo->backBuffer;
+	m_frameBufferInfo->backBuffer = tmpBuffer;
 }
 
 bool FrameBuffer::initialize()
@@ -88,18 +113,18 @@ bool FrameBuffer::initialize()
 void FrameBuffer::close()
 {
     assert(m_frameBufferInfo);
-    assert(m_frameBufferInfo->mappedMemory);
+    assert(m_frameBufferInfo->frontBuffer);
     
-    munmap(m_frameBufferInfo->mappedMemory, m_frameBufferInfo->bufferSize());
+    munmap(m_frameBufferInfo->frontBuffer, m_frameBufferInfo->totalBufferSize());
 }
 
 void FrameBuffer::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
 {
     assert(m_frameBufferInfo);
-    assert(m_frameBufferInfo->mappedMemory);
+    assert(m_frameBufferInfo->frontBuffer);
 
     long bufferIndex = m_frameBufferInfo->bufferIndexForCoordinates(x, y);
-    uint8_t *bufferStart = (uint8_t *)m_frameBufferInfo->mappedMemory;
+    uint8_t *bufferStart = (uint8_t *)m_frameBufferInfo->backBuffer;
     *((uint32_t *)(bufferStart + bufferIndex)) = pixelColorFromRGBComponents(r, g, b);
 }
 
@@ -113,22 +138,28 @@ uint32_t FrameBuffer::pixelColorFromRGBComponents(uint8_t r, uint8_t g, uint8_t 
 void FrameBuffer::clearScreen()
 {
     assert(m_frameBufferInfo);
-    assert(m_frameBufferInfo->mappedMemory);
+    assert(m_frameBufferInfo->frontBuffer);
     
-    void *bufferStart = m_frameBufferInfo->mappedMemory;
-    memset(bufferStart, 0, m_frameBufferInfo->bufferSize());
-    
-#ifdef ENABLE_DEBUG
-    cout.flags(ios::hex | ios::showbase);
-    cout <<  bufferStart << dec << ", size: " << m_frameBufferInfo->bufferSize() / 1024 / 1024 << endl;
-#endif
+    void *bufferStart = m_frameBufferInfo->backBuffer;
+    memset(bufferStart, 0, m_frameBufferInfo->screenBufferSize());
 }
 
-long FrameBuffer::FBInfo::bufferSize() {
+long FrameBuffer::FBInfo::screenBufferSize() 
+{
     return screenVarInfo.yres_virtual * screenFixedInfo.line_length;
 }
 
-long FrameBuffer::FBInfo::bufferIndexForCoordinates(int x, int y) {
+long FrameBuffer::FBInfo::totalBufferSize() 
+{
+#if ENABLE_DOUBLE_BUFFER == 1
+    return screenBufferSize() * 2;
+#else
+    return screenBufferSize();
+#endif
+}
+
+long FrameBuffer::FBInfo::bufferIndexForCoordinates(int x, int y) 
+{
     return (x + screenVarInfo.xoffset) * (screenVarInfo.bits_per_pixel / 8) +
            (y + screenVarInfo.yoffset) * screenFixedInfo.line_length;
 }

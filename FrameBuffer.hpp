@@ -21,17 +21,20 @@ protected:
     int open() override;
     void close() override;
     bool createFrameBuffer(int fd) override;
+    void swapBuffer() override;
     
 private:
     struct FBInfo
     {
         int fd {-1};
-        void *mappedMemory {nullptr};
+        void *frontBuffer {nullptr};
+        void *backBuffer {nullptr};
         struct fb_var_screeninfo screenVarInfo;
         struct fb_fix_screeninfo screenFixedInfo;
         unsigned bytesPerPixel;
 
-        long bufferSize();
+        long screenBufferSize();
+        long totalBufferSize();
         long bufferIndexForCoordinates(int x, int y);
         uint32_t getPixelColor(uint8_t r, uint8_t g, uint8_t b);
     };

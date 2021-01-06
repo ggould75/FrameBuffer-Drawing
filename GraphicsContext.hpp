@@ -19,6 +19,8 @@ public:
     void drawLine(int x0, int y0, int x1, int y1);
     void drawCircle(int centerX, int centerY, int radius);
     
+    void fillRect(int x0, int y0, int width, int height);
+    
     void clear();
 
 private:

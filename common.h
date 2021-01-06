@@ -1,0 +1,3 @@
+
+#define ENABLE_DEBUG 1
+#define ENABLE_DOUBLE_BUFFER 0
