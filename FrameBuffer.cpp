@@ -87,17 +87,18 @@ bool FrameBuffer::createFrameBuffer(int fd)
 void FrameBuffer::swapBuffer()
 {
     fb_var_screeninfo varInfo = m_frameBufferInfo->screenVarInfo;
-    if (varInfo.yoffset == 0)
-		varInfo.yoffset = m_frameBufferInfo->screenBufferSize();
-	else
-		varInfo.yoffset = 0;
+    if (varInfo.yoffset == 0) {
+        varInfo.yoffset = m_frameBufferInfo->screenBufferSize();
+    } else {
+        varInfo.yoffset = 0;
+    }
+    
+    // Pan to the back buffer
+    ioctl(m_frameBufferInfo->fd, FBIOPAN_DISPLAY, &varInfo);
 
-	// Pan to the back buffer
-	ioctl(m_frameBufferInfo->fd, FBIOPAN_DISPLAY, &varInfo);
-
-	void *tmpBuffer = m_frameBufferInfo->frontBuffer;
-	m_frameBufferInfo->frontBuffer = m_frameBufferInfo->backBuffer;
-	m_frameBufferInfo->backBuffer = tmpBuffer;
+    void *tmpBuffer = m_frameBufferInfo->frontBuffer;
+    m_frameBufferInfo->frontBuffer = m_frameBufferInfo->backBuffer;
+    m_frameBufferInfo->backBuffer = tmpBuffer;
 }
 
 bool FrameBuffer::initialize()
