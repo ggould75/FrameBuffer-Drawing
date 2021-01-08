@@ -34,7 +34,7 @@ int main(int argc, const char * argv[])
     
     sleep(2);
     
-    for (int i = 0; i < 200; i++) {
+    for (int i = 0; i < 500; i++) {
         gc.fillRect(2000, 300, 300, 150);
         gc.clear();
     }

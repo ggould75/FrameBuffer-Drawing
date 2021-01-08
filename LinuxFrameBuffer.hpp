@@ -1,21 +1,22 @@
-#ifndef FRAMEBUFFER_H
-#define FRAMEBUFFER_H
+#ifndef LINUXFRAMEBUFFER_H
+#define LINUXFRAMEBUFFER_H
 
 #include <linux/fb.h>
 
 #include "Device.hpp"
 
-class FrameBuffer : public Device
+class LinuxFrameBuffer : public Device
 {
 public:
-    FrameBuffer(short int fbNum) : fbNum(fbNum) { }
-    ~FrameBuffer();
+    LinuxFrameBuffer(short int fbNum) : fbNum(fbNum) { }
+    ~LinuxFrameBuffer();
     
     bool initialize() override;
     
     void drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) override;
     void clearScreen() override;
-    uint32_t pixelColorFromRGBComponents(uint8_t r, uint8_t g, uint8_t b) override;
+    
+    uint32_t pixelColorFromRGBComponents(uint8_t r, uint8_t g, uint8_t b);
 
 protected:
     int open() override;
@@ -43,4 +44,4 @@ private:
     FBInfo *m_frameBufferInfo {nullptr};
 };
 
-#endif // FRAMEBUFFER_H
+#endif // LINUXFRAMEBUFFER_H

@@ -13,8 +13,8 @@ public:
     
     virtual void drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) = 0;
     virtual void clearScreen() = 0;
-    virtual uint32_t pixelColorFromRGBComponents(uint8_t r, uint8_t g, uint8_t b) = 0;
     
+// TODO: should not be visible in interface. Perhaps better to create a pure-virtual class for the private setup that all devices implement as d_ptr?
 protected:
     virtual int open() = 0;
     virtual void close() = 0;

@@ -8,10 +8,10 @@
 #include <cassert>
 #include <iostream>
 
-#include "FrameBuffer.hpp"
+#include "LinuxFrameBuffer.hpp"
 #include "common.h"
 
-FrameBuffer::~FrameBuffer()
+LinuxFrameBuffer::~LinuxFrameBuffer()
 {
     if (m_frameBufferInfo == nullptr) {
         return;
@@ -24,7 +24,7 @@ FrameBuffer::~FrameBuffer()
     delete m_frameBufferInfo;
 }
 
-int FrameBuffer::open()
+int LinuxFrameBuffer::open()
 {
     char devicePath[16];
     
@@ -39,7 +39,7 @@ int FrameBuffer::open()
     return fd;
 }
 
-bool FrameBuffer::createFrameBuffer(int fd)
+bool LinuxFrameBuffer::createFrameBuffer(int fd)
 {
     m_frameBufferInfo = new FBInfo();
     m_frameBufferInfo->fd = fd;
@@ -84,7 +84,7 @@ bool FrameBuffer::createFrameBuffer(int fd)
     return true;
 }
 
-void FrameBuffer::swapBuffer()
+void LinuxFrameBuffer::swapBuffer()
 {
     fb_var_screeninfo varInfo = m_frameBufferInfo->screenVarInfo;
     if (varInfo.yoffset == 0) {
@@ -101,7 +101,7 @@ void FrameBuffer::swapBuffer()
     m_frameBufferInfo->backBuffer = tmpBuffer;
 }
 
-bool FrameBuffer::initialize()
+bool LinuxFrameBuffer::initialize()
 {
     int fd = open();
     if (fd > 0) {
@@ -111,7 +111,7 @@ bool FrameBuffer::initialize()
     return false;
 }
 
-void FrameBuffer::close()
+void LinuxFrameBuffer::close()
 {
     assert(m_frameBufferInfo);
     assert(m_frameBufferInfo->frontBuffer);
@@ -119,7 +119,7 @@ void FrameBuffer::close()
     munmap(m_frameBufferInfo->frontBuffer, m_frameBufferInfo->totalBufferSize());
 }
 
-void FrameBuffer::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
+void LinuxFrameBuffer::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
 {
     assert(m_frameBufferInfo);
     assert(m_frameBufferInfo->frontBuffer);
@@ -129,14 +129,14 @@ void FrameBuffer::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
     *((uint32_t *)(bufferStart + bufferIndex)) = pixelColorFromRGBComponents(r, g, b);
 }
 
-uint32_t FrameBuffer::pixelColorFromRGBComponents(uint8_t r, uint8_t g, uint8_t b)
+uint32_t LinuxFrameBuffer::pixelColorFromRGBComponents(uint8_t r, uint8_t g, uint8_t b)
 {
     assert(m_frameBufferInfo);
 
     return m_frameBufferInfo->getPixelColor(r, g, b);
 }
 
-void FrameBuffer::clearScreen()
+void LinuxFrameBuffer::clearScreen()
 {
     assert(m_frameBufferInfo);
     assert(m_frameBufferInfo->frontBuffer);
@@ -145,12 +145,12 @@ void FrameBuffer::clearScreen()
     memset(bufferStart, 0, m_frameBufferInfo->screenBufferSize());
 }
 
-long FrameBuffer::FBInfo::screenBufferSize() 
+long LinuxFrameBuffer::FBInfo::screenBufferSize() 
 {
     return screenVarInfo.yres_virtual * screenFixedInfo.line_length;
 }
 
-long FrameBuffer::FBInfo::totalBufferSize() 
+long LinuxFrameBuffer::FBInfo::totalBufferSize() 
 {
 #if ENABLE_DOUBLE_BUFFER == 1
     return screenBufferSize() * 2;
@@ -159,13 +159,13 @@ long FrameBuffer::FBInfo::totalBufferSize()
 #endif
 }
 
-long FrameBuffer::FBInfo::bufferIndexForCoordinates(int x, int y) 
+long LinuxFrameBuffer::FBInfo::bufferIndexForCoordinates(int x, int y) 
 {
     return (x + screenVarInfo.xoffset) * (screenVarInfo.bits_per_pixel / 8) +
            (y + screenVarInfo.yoffset) * screenFixedInfo.line_length;
 }
 
-uint32_t FrameBuffer::FBInfo::getPixelColor(uint8_t r, uint8_t g, uint8_t b)
+uint32_t LinuxFrameBuffer::FBInfo::getPixelColor(uint8_t r, uint8_t g, uint8_t b)
 {
     return (r << screenVarInfo.red.offset) |
            (g << screenVarInfo.green.offset) |

@@ -1,8 +1,10 @@
 #include "GraphicsContext.hpp"
 #include "GraphicsContext_p.hpp"
-#include "FrameBuffer.hpp"
+#include "LinuxFrameBuffer.hpp"
+#include "DrmDevice.hpp"
 
-GraphicsContext::GraphicsContext() : m_device(new FrameBuffer(0)), d_ptr(new GraphicsContextPrivate())
+//GraphicsContext::GraphicsContext() : m_device(new LinuxFrameBuffer(0)), d_ptr(new GraphicsContextPrivate())
+GraphicsContext::GraphicsContext() : m_device(new DrmDevice(1)), d_ptr(new GraphicsContextPrivate())
 {
     
 }
