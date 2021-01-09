@@ -50,8 +50,8 @@ private:
     int setMode(int fd);
     void cleanup(int fd);
     
-    std::list<DrmDeviceSummary> *list {NULL};
-    short int cardNumber;
+    std::list<DrmDeviceSummary> *m_deviceslist {NULL};
+    short int m_cardNumber;
     int fd {-1};
 };
 

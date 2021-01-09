@@ -8,19 +8,19 @@
 
 #include "DrmDevice.hpp"
 
-DrmDevice::DrmDevice(short int cardNumber) : cardNumber(cardNumber), list(new std::list<DrmDeviceSummary>) { }
+DrmDevice::DrmDevice(short int cardNumber) : m_cardNumber(cardNumber), m_deviceslist(new std::list<DrmDeviceSummary>) { }
 
 DrmDevice::~DrmDevice()
 {
     close();
-    delete list;
+    delete m_deviceslist;
 }
 
 int DrmDevice::open()
 {
     char devicePath[16];
     
-    sprintf(devicePath, "/dev/dri/card%d", cardNumber);
+    sprintf(devicePath, "/dev/dri/card%d", m_cardNumber);
     int fd = ::open(devicePath, O_RDWR);
     if (fd < 0) {
         cerr << "Error opening " << devicePath << endl;
@@ -82,7 +82,7 @@ int DrmDevice::prepare(int fd)
         }
 
         drmModeFreeConnector(connector);
-        list->push_front(*dev);
+        m_deviceslist->push_front(*dev);
     }
 
     drmModeFreeResources(cardResources);
@@ -153,7 +153,7 @@ int DrmDevice::findCrtc(int fd, drmModeRes *cardResources, drmModeConnector *con
     if (enc) {
         if (enc->crtc_id) {
             crtc = enc->crtc_id;
-            for (auto iter = list->begin(); iter != list->end(); ++iter) {
+            for (auto iter = m_deviceslist->begin(); iter != m_deviceslist->end(); ++iter) {
                 if (iter->crtc == crtc) {
                     crtc = -1;
                     break;
@@ -189,7 +189,7 @@ int DrmDevice::findCrtc(int fd, drmModeRes *cardResources, drmModeConnector *con
 
             // Check that no other device already uses this CRTC
             crtc = cardResources->crtcs[j];
-            for (auto iter = list->begin(); iter != list->end(); ++iter) {
+            for (auto iter = m_deviceslist->begin(); iter != m_deviceslist->end(); ++iter) {
                 if (iter->crtc == crtc) {
                     crtc = -1;
                     break;
@@ -284,7 +284,7 @@ int DrmDevice::setMode(int fd)
 {
     struct modeset_dev *iter;
     
-    for (auto iter = list->begin(); iter != list->end(); ++iter) {
+    for (auto iter = m_deviceslist->begin(); iter != m_deviceslist->end(); ++iter) {
         iter->saved_crtc = drmModeGetCrtc(fd, iter->crtc);
         int ret = drmModeSetCrtc(fd, iter->crtc, iter->fb, 0, 0,
                         &iter->conn, 1, &iter->mode);
@@ -304,8 +304,8 @@ void DrmDevice::cleanup(int fd)
     struct DrmDeviceSummary *iter;
     struct drm_mode_destroy_dumb dreq;
 
-    while (!list->empty()) {
-        iter = &list->front();
+    while (!m_deviceslist->empty()) {
+        iter = &m_deviceslist->front();
         
         // Restore saved CRTC configuration
         drmModeSetCrtc(fd,
@@ -328,7 +328,7 @@ void DrmDevice::cleanup(int fd)
         dreq.handle = iter->handle;
         drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
 
-        list->pop_front();
+        m_deviceslist->pop_front();
     }
 }
 
@@ -345,12 +345,7 @@ bool DrmDevice::initialize()
         return false;
     }
     
-    if (prepare(fd)) {
-        ::close(fd);
-        return false;
-    }
-    
-    if (setMode(fd)) {
+    if (prepare(fd) || setMode(fd)) {
         ::close(fd);
         return false;
     }
@@ -365,9 +360,9 @@ void DrmDevice::close()
 
 void DrmDevice::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
 {
-    assert(list);
+    assert(m_deviceslist);
     
-    struct DrmDeviceSummary iter = list->front();
+    struct DrmDeviceSummary iter = m_deviceslist->front();
     long bufferIndex = iter.bufferIndexForCoordinates(x, y);
     *(uint32_t *)&iter.map[bufferIndex] = iter.getPixelColor(r, g, b);
 }
