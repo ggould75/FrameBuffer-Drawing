@@ -4,12 +4,14 @@
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 
+#include <list>
+
 #include "Device.hpp"
 
 class DrmDevice : public Device
 {
 public:
-    DrmDevice(short int cardNumber) : cardNumber(cardNumber) { }
+    DrmDevice(short int cardNumber);
     ~DrmDevice();
 
     bool initialize() override;
@@ -20,13 +22,10 @@ public:
 protected:
     int open() override;
     void close() override;
-    bool createFrameBuffer(int fd) override;
     void swapBuffer() override;
     
 private:
-    struct modeset_dev {
-        struct modeset_dev *next;
-
+    struct DrmDeviceSummary {
         uint32_t width;
         uint32_t height;
         uint32_t stride;
@@ -45,13 +44,13 @@ private:
     };
     
     int prepare(int fd);
-    int setupDevice(int fd, drmModeRes *res, drmModeConnector *conn, modeset_dev *dev);
-    int findCrtc(int fd, drmModeRes *res, drmModeConnector *conn, struct modeset_dev *dev);
-    int createFB(int fd, struct modeset_dev *dev);
+    int setupDevice(int fd, drmModeRes *cardResources, drmModeConnector *connector, DrmDeviceSummary *dev);
+    int findCrtc(int fd, drmModeRes *cardResources, drmModeConnector *connector, struct DrmDeviceSummary *dev);
+    int createFB(int fd, struct DrmDeviceSummary *dev);
     int setMode(int fd);
     void cleanup(int fd);
     
-    struct modeset_dev *modeset_list {NULL};
+    std::list<DrmDeviceSummary> *list {NULL};
     short int cardNumber;
     int fd {-1};
 };

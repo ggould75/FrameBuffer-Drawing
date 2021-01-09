@@ -18,7 +18,6 @@ public:
 protected:
     virtual int open() = 0;
     virtual void close() = 0;
-    virtual bool createFrameBuffer(int fd) = 0;
     virtual void swapBuffer() = 0;
 };
 

@@ -8,9 +8,12 @@
 
 #include "DrmDevice.hpp"
 
+DrmDevice::DrmDevice(short int cardNumber) : cardNumber(cardNumber), list(new std::list<DrmDeviceSummary>) { }
+
 DrmDevice::~DrmDevice()
 {
     close();
+    delete list;
 }
 
 int DrmDevice::open()
@@ -38,7 +41,7 @@ int DrmDevice::prepare(int fd)
     drmModeRes *cardResources;
     drmModeConnector *connector;
     unsigned int i;
-    struct modeset_dev *dev;
+    struct DrmDeviceSummary *dev;
     int ret;
 
     cardResources = drmModeGetResources(fd);
@@ -58,7 +61,7 @@ int DrmDevice::prepare(int fd)
             continue;
         }
 
-        dev = (modeset_dev *)malloc(sizeof(*dev));
+        dev = (DrmDeviceSummary *)malloc(sizeof(*dev));
         memset(dev, 0, sizeof(*dev));
         dev->conn = connector->connector_id;
 
@@ -79,8 +82,7 @@ int DrmDevice::prepare(int fd)
         }
 
         drmModeFreeConnector(connector);
-        dev->next = modeset_list;
-        modeset_list = dev;
+        list->push_front(*dev);
     }
 
     drmModeFreeResources(cardResources);
@@ -88,37 +90,37 @@ int DrmDevice::prepare(int fd)
     return 0;
 }
 
-int DrmDevice::setupDevice(int fd, drmModeRes *res, drmModeConnector *conn, struct modeset_dev *dev)
+int DrmDevice::setupDevice(int fd, drmModeRes *cardResources, drmModeConnector *connector, struct DrmDeviceSummary *dev)
 {
     int ret;
 
-    if (conn->connection != DRM_MODE_CONNECTED) {
+    if (connector->connection != DRM_MODE_CONNECTED) {
         fprintf(stderr, "ignoring unused connector %u\n",
-            conn->connector_id);
+            connector->connector_id);
         
         return -ENOENT;
     }
 
     // Make sure there's at least one valid mode
-    if (conn->count_modes == 0) {
+    if (connector->count_modes == 0) {
         fprintf(stderr, "no valid mode for connector %u\n",
-            conn->connector_id);
+            connector->connector_id);
         
         return -EFAULT;
     }
     
     // Copy mode information into local structure
-    memcpy(&dev->mode, &conn->modes[0], sizeof(dev->mode));
-    dev->width = conn->modes[0].hdisplay;
-    dev->height = conn->modes[0].vdisplay;
+    memcpy(&dev->mode, &connector->modes[0], sizeof(dev->mode));
+    dev->width = connector->modes[0].hdisplay;
+    dev->height = connector->modes[0].vdisplay;
     
-    printf("mode for connector %u is %ux%u\n", conn->connector_id, dev->width, dev->height);
+    printf("mode for connector %u is %ux%u\n", connector->connector_id, dev->width, dev->height);
 
     // Look for CRTC for the connector
-    ret = findCrtc(fd, res, conn, dev);
+    ret = findCrtc(fd, cardResources, connector, dev);
     if (ret) {
         fprintf(stderr, "no valid crtc for connector %u\n",
-            conn->connector_id);
+            connector->connector_id);
         
         return ret;
     }
@@ -127,7 +129,7 @@ int DrmDevice::setupDevice(int fd, drmModeRes *res, drmModeConnector *conn, stru
     ret = createFB(fd, dev);
     if (ret) {
         fprintf(stderr, "cannot create framebuffer for connector %u\n",
-            conn->connector_id);
+            connector->connector_id);
         
         return ret;
     }
@@ -135,29 +137,29 @@ int DrmDevice::setupDevice(int fd, drmModeRes *res, drmModeConnector *conn, stru
     return 0;
 }
 
-int DrmDevice::findCrtc(int fd, drmModeRes *res, drmModeConnector *conn, struct modeset_dev *dev)
+int DrmDevice::findCrtc(int fd, drmModeRes *cardResources, drmModeConnector *connector, struct DrmDeviceSummary *dev)
 {
     drmModeEncoder *enc;
     unsigned int i, j;
     int32_t crtc;
     struct modeset_dev *iter;
 
-    /* first try the currently conected encoder+crtc */
-    if (conn->encoder_id)
-        enc = drmModeGetEncoder(fd, conn->encoder_id);
+    // First try the currently connected encoder+crtc
+    if (connector->encoder_id)
+        enc = drmModeGetEncoder(fd, connector->encoder_id);
     else
         enc = NULL;
 
     if (enc) {
         if (enc->crtc_id) {
             crtc = enc->crtc_id;
-            for (iter = modeset_list; iter; iter = iter->next) {
+            for (auto iter = list->begin(); iter != list->end(); ++iter) {
                 if (iter->crtc == crtc) {
                     crtc = -1;
                     break;
                 }
             }
-
+            
             if (crtc >= 0) {
                 drmModeFreeEncoder(enc);
                 dev->crtc = crtc;
@@ -169,33 +171,32 @@ int DrmDevice::findCrtc(int fd, drmModeRes *res, drmModeConnector *conn, struct 
     }
 
     /* If the connector is not currently bound to an encoder or if the
-        * encoder+crtc is already used by another connector (actually unlikely
-        * but lets be safe), iterate all other available encoders to find a
-        * matching CRTC. */
-    for (i = 0; i < conn->count_encoders; ++i) {
-        enc = drmModeGetEncoder(fd, conn->encoders[i]);
+     * encoder+crtc is already used by another connector (actually unlikely
+     * but lets be safe), iterate all other available encoders to find a
+     * matching CRTC. */
+    for (i = 0; i < connector->count_encoders; ++i) {
+        enc = drmModeGetEncoder(fd, connector->encoders[i]);
         if (!enc) {
             fprintf(stderr, "cannot retrieve encoder %u:%u (%d): %m\n",
-                i, conn->encoders[i], errno);
+                i, connector->encoders[i], errno);
             continue;
         }
 
-        /* iterate all global CRTCs */
-        for (j = 0; j < res->count_crtcs; ++j) {
+        for (j = 0; j < cardResources->count_crtcs; ++j) {
             /* check whether this CRTC works with the encoder */
             if (!(enc->possible_crtcs & (1 << j)))
                 continue;
 
-            /* check that no other device already uses this CRTC */
-            crtc = res->crtcs[j];
-            for (iter = modeset_list; iter; iter = iter->next) {
+            // Check that no other device already uses this CRTC
+            crtc = cardResources->crtcs[j];
+            for (auto iter = list->begin(); iter != list->end(); ++iter) {
                 if (iter->crtc == crtc) {
                     crtc = -1;
                     break;
                 }
             }
 
-            /* we have found a CRTC, so save it and return */
+            // We have found a CRTC, so save it and return
             if (crtc >= 0) {
                 drmModeFreeEncoder(enc);
                 dev->crtc = crtc;
@@ -207,19 +208,19 @@ int DrmDevice::findCrtc(int fd, drmModeRes *res, drmModeConnector *conn, struct 
     }
 
     fprintf(stderr, "cannot find suitable CRTC for connector %u\n",
-        conn->connector_id);
+        connector->connector_id);
     
     return -ENOENT;
 }
 
-int DrmDevice::createFB(int fd, struct modeset_dev *dev)
+int DrmDevice::createFB(int fd, struct DrmDeviceSummary *dev)
 {
     struct drm_mode_create_dumb creq;
     struct drm_mode_destroy_dumb dreq;
     struct drm_mode_map_dumb mreq;
     int ret;
 
-    /* create dumb buffer */
+    // Create dumb buffer
     memset(&creq, 0, sizeof(creq));
     creq.width = dev->width;
     creq.height = dev->height;
@@ -234,7 +235,7 @@ int DrmDevice::createFB(int fd, struct modeset_dev *dev)
     dev->size = creq.size;
     dev->handle = creq.handle;
 
-    /* create framebuffer object for the dumb-buffer */
+    // Create framebuffer object for the dumb-buffer
     ret = drmModeAddFB(fd, dev->width, dev->height, 24, 32, dev->stride,
                 dev->handle, &dev->fb);
     if (ret) {
@@ -244,7 +245,7 @@ int DrmDevice::createFB(int fd, struct modeset_dev *dev)
         goto err_destroy;
     }
 
-    /* prepare buffer for memory mapping */
+    // Prepare framebuffer for memory mapping */
     memset(&mreq, 0, sizeof(mreq));
     mreq.handle = dev->handle;
     ret = drmIoctl(fd, DRM_IOCTL_MODE_MAP_DUMB, &mreq);
@@ -263,7 +264,7 @@ int DrmDevice::createFB(int fd, struct modeset_dev *dev)
         goto err_fb;
     }
 
-    /* clear the framebuffer to 0 */
+    // Clear framebuffer (screen)
     memset(dev->map, 0, dev->size);
 
     return 0;
@@ -283,7 +284,7 @@ int DrmDevice::setMode(int fd)
 {
     struct modeset_dev *iter;
     
-    for (iter = modeset_list; iter; iter = iter->next) {
+    for (auto iter = list->begin(); iter != list->end(); ++iter) {
         iter->saved_crtc = drmModeGetCrtc(fd, iter->crtc);
         int ret = drmModeSetCrtc(fd, iter->crtc, iter->fb, 0, 0,
                         &iter->conn, 1, &iter->mode);
@@ -300,15 +301,13 @@ int DrmDevice::setMode(int fd)
 
 void DrmDevice::cleanup(int fd)
 {
-    struct modeset_dev *iter;
+    struct DrmDeviceSummary *iter;
     struct drm_mode_destroy_dumb dreq;
 
-    while (modeset_list) {
-        /* remove from global list */
-        iter = modeset_list;
-        modeset_list = iter->next;
-
-        /* restore saved CRTC configuration */
+    while (!list->empty()) {
+        iter = &list->front();
+        
+        // Restore saved CRTC configuration
         drmModeSetCrtc(fd,
                     iter->saved_crtc->crtc_id,
                     iter->saved_crtc->buffer_id,
@@ -319,31 +318,23 @@ void DrmDevice::cleanup(int fd)
                     &iter->saved_crtc->mode);
         drmModeFreeCrtc(iter->saved_crtc);
 
-        /* unmap buffer */
         munmap(iter->map, iter->size);
 
-        /* delete framebuffer */
+        // Delete framebuffer
         drmModeRmFB(fd, iter->fb);
 
-        /* delete dumb buffer */
+        // Delete dumb buffer
         memset(&dreq, 0, sizeof(dreq));
         dreq.handle = iter->handle;
         drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
 
-        /* free allocated memory */
-        free(iter);
+        list->pop_front();
     }
-}
-
-// TODO: unused
-bool DrmDevice::createFrameBuffer(int fd)
-{
-    return true;
 }
 
 void DrmDevice::swapBuffer()
 {
-    
+    // TODO
 }
 
 // TODO: replace with int return value
@@ -374,12 +365,11 @@ void DrmDevice::close()
 
 void DrmDevice::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
 {
-    //drawTest(modeset_list);
-    assert(modeset_list);
-
-    struct modeset_dev *iter = modeset_list;
-    long bufferIndex = iter->bufferIndexForCoordinates(x, y);
-    *(uint32_t *)&iter->map[bufferIndex] = iter->getPixelColor(r, g, b);
+    assert(list);
+    
+    struct DrmDeviceSummary iter = list->front();
+    long bufferIndex = iter.bufferIndexForCoordinates(x, y);
+    *(uint32_t *)&iter.map[bufferIndex] = iter.getPixelColor(r, g, b);
 }
 
 void DrmDevice::clearScreen()
@@ -387,12 +377,12 @@ void DrmDevice::clearScreen()
     // TODO
 }
 
-long DrmDevice::modeset_dev::bufferIndexForCoordinates(int x, int y) 
+long DrmDevice::DrmDeviceSummary::bufferIndexForCoordinates(int x, int y) 
 {
     return stride * y + x * 4;
 }
 
-uint32_t DrmDevice::modeset_dev::getPixelColor(uint8_t r, uint8_t g, uint8_t b)
+uint32_t DrmDevice::DrmDeviceSummary::getPixelColor(uint8_t r, uint8_t g, uint8_t b)
 {
     return (r << 16) | (g << 8) | b; // FIXME: works only for 32bpp!
 }

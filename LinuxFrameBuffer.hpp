@@ -21,10 +21,11 @@ public:
 protected:
     int open() override;
     void close() override;
-    bool createFrameBuffer(int fd) override;
     void swapBuffer() override;
     
 private:
+    bool createFrameBuffer(int fd);
+    
     struct FBInfo
     {
         int fd {-1};
