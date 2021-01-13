@@ -3,8 +3,6 @@
 
 #include <linux/fb.h>
 
-#include "Device.hpp"
-
 class LinuxFrameBuffer : public Device
 {
 public:

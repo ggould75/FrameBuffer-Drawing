@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "GraphicsContext_p.hpp"
 #include "GraphicsContext.hpp"
 
@@ -12,13 +14,13 @@ void GraphicsContextPrivate::bresenham(GraphicsContext& context, int x0, int y0,
         return;
     } else if (dx == 0) {
         // Vertical line
-        for (int y = min(y0, y1); y <= max(y0, y1); y++) {
+        for (int y = std::min(y0, y1); y <= std::max(y0, y1); y++) {
             context.drawPixel(x0, y, 0x00, 0xAA, 0xFF);
         }
         return;
     } else if (dy == 0) {
         // Horizontal line
-        for (int x = min(x0, x1); x <= max(x0, x1); x++) {
+        for (int x = std::min(x0, x1); x <= std::max(x0, x1); x++) {
             context.drawPixel(x, y0, 0x00, 0xAA, 0xFF);
         }
         return;
