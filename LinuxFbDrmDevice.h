@@ -5,6 +5,8 @@
 
 #include <vector>
 
+#include "Size.hpp"
+
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 
@@ -41,13 +43,12 @@ public:
     };
     
     struct Output {
-        Output() : connectorId(0), isModeSet(false), mode(0), fbWidth(0), fbHeight(0), crtcId(0), oldCrtc(nullptr) { }
+        Output() : connectorId(0), isModeSet(false), mode(0), resolution(Size()), crtcId(0), oldCrtc(nullptr) { }
         uint32_t connectorId;
         bool isModeSet;
         std::vector<drmModeModeInfo> modes;
         int mode;
-        int fbWidth;
-        int fbHeight; // TODO: replace with a Size object
+        Size resolution;
         uint32_t crtcId;
         drmModeCrtc *oldCrtc;
         Framebuffer fb[kBufferCount];
@@ -55,6 +56,8 @@ public:
         void restoreMode(LinuxFbDrmDevice *device);
         void cleanup(LinuxFbDrmDevice *device);
     };
+    
+    Output *output(int index) { return &_mOutputs.at(index); }
     
 private:    
     Output *createOutputForConnector(drmModeResPtr resources, drmModeConnectorPtr connector);

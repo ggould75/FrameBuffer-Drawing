@@ -1,6 +1,8 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
+#include "Rect.hpp"
+
 class Screen
 {
 public:
@@ -10,9 +12,7 @@ public:
     virtual bool initialize() = 0;
     
     virtual int depth() const = 0;
-    
-    // Possible virtual methods:
-    // virtual Rect geometry() const = 0;
+    virtual Rect geometry() const = 0;
     // 
     // virtual Image::PixelFormat pixelFormat() const = 0;
     // 

@@ -15,10 +15,12 @@ public:
     bool initialize() override;
     
     int depth() const override { return mDepth; }
+    void setGeometry(const Rect &rect);
     
     virtual void redraw();
     
 protected:
+    Rect mGeometry;
     Image *mScreenImage;
     int mDepth;
     

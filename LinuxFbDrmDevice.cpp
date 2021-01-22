@@ -8,7 +8,7 @@
 #include <cassert>
 
 #include "LinuxFbDrmDevice.h"
-#include "Image.h"
+#include "Image.hpp"
 
 using namespace std;
 
@@ -78,7 +78,8 @@ void LinuxFbDrmDevice::createScreens()
 
         Output *output = createOutputForConnector(resources, connector);
         _mOutputs.push_back(*output);
-
+        // TODO: check: if push_back creates a copy you are leaking output
+        
         drmModeFreeConnector(connector);
     }
 
@@ -100,8 +101,8 @@ void LinuxFbDrmDevice::createFramebuffers()
 
 bool LinuxFbDrmDevice::createFramebuffer(LinuxFbDrmDevice::Output *output, int bufferIndex)
 {
-    const uint32_t width = output->fbWidth;
-    const uint32_t height = output->fbHeight;
+    const uint32_t width = output->resolution.width();
+    const uint32_t height = output->resolution.height();
     const uint32_t bpp = 32; // FIXME: take it from output
     
     drm_mode_create_dumb creq;
@@ -256,8 +257,7 @@ LinuxFbDrmDevice::Output *LinuxFbDrmDevice::createOutputForConnector(drmModeResP
     output->crtcId = crtcId;
     output->modes = modes;
     output->oldCrtc = drmModeGetCrtc(_mDriFd, crtcId);
-    output->fbWidth = width;
-    output->fbHeight = height;
+    output->resolution = Size(width, height);
     
     _mCrtcAllocator |= (1 << crtc);
     
