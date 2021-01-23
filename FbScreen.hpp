@@ -15,6 +15,7 @@ public:
     bool initialize() override;
     
     int depth() const override { return mDepth; }
+    Rect geometry() const override { return mGeometry; }
     void setGeometry(const Rect &rect);
     
     virtual void redraw();

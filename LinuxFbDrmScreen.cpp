@@ -24,8 +24,10 @@ bool LinuxFbDrmScreen::initialize()
     _mDevice->createFramebuffers();
     _mDevice->setMode();
 
-    LinuxFbDrmDevice::Output *output(_mDevice->output(0));
-    mGeometry = Rect(output->resolution);
+    if (_mDevice->outputCount() > 0) {
+        LinuxFbDrmDevice::Output *output(_mDevice->output(0));
+        mGeometry = Rect(output->resolution);
+    }
     
     return true;
 }

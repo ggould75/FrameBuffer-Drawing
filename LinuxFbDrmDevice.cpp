@@ -77,8 +77,10 @@ void LinuxFbDrmDevice::createScreens()
         }
 
         Output *output = createOutputForConnector(resources, connector);
-        _mOutputs.push_back(*output);
-        // TODO: check: if push_back creates a copy you are leaking output
+        if (output) {
+            _mOutputs.push_back(*output);
+            delete output;
+        }
         
         drmModeFreeConnector(connector);
     }
@@ -119,12 +121,12 @@ bool LinuxFbDrmDevice::createFramebuffer(LinuxFbDrmDevice::Output *output, int b
     fb.handle = creq.handle;
     fb.pitch = creq.pitch;
     fb.length = creq.size;
-    
+
     uint32_t handles[4] = { fb.handle };
     uint32_t strides[4] = { fb.pitch };
     uint32_t offsets[4] = { 0 };
     
-    if (drmModeAddFB2(_mDriFd, width, height, 32, handles, strides, offsets, &fb.id, 0)) { // FIXME: take pixel format from output
+    if (drmModeAddFB2(_mDriFd, width, height, output->drmFormat, handles, strides, offsets, &fb.id, 0)) {
         cerr << "Failed to add (" << errno << "): " << strerror(errno) << endl;
         return false;
     }
@@ -147,7 +149,7 @@ bool LinuxFbDrmDevice::createFramebuffer(LinuxFbDrmDevice::Output *output, int b
     
     fb.renderedImage = new Image(); // TODO
     
-    fprintf(stdout, "Framebuffer %u, pixel format: 0x%x, mapped at %p", fb.id, 32, fb.data);
+    fprintf(stdout, "Framebuffer %u, pixel format: 0x%x, mapped at %p\n", fb.id, 32, fb.data);
     
     return true;
 }
@@ -221,7 +223,7 @@ LinuxFbDrmDevice::Output *LinuxFbDrmDevice::createOutputForConnector(drmModeResP
     }
 
     if (connector->count_modes == 0) {
-        cerr << "No valid mode for connector " << connector->connector_id << endl;        
+        cerr << "No valid mode for createOutputForConnectorconnector " << connector->connector_id << endl;        
         return nullptr;
     }
     
@@ -240,7 +242,7 @@ LinuxFbDrmDevice::Output *LinuxFbDrmDevice::createOutputForConnector(drmModeResP
     for (int i = 0; i < connector->count_modes; i++) {
         const drmModeModeInfo &mode = connector->modes[i];
         cout << "mode " << i << ": " << mode.hdisplay << "x" << mode.vdisplay 
-             << '@' << mode.vrefresh << "hz";
+             << '@' << mode.vrefresh << "hz" << endl;
         modes.push_back(connector->modes[i]);
     }
     
@@ -258,7 +260,14 @@ LinuxFbDrmDevice::Output *LinuxFbDrmDevice::createOutputForConnector(drmModeResP
     output->modes = modes;
     output->oldCrtc = drmModeGetCrtc(_mDriFd, crtcId);
     output->resolution = Size(width, height);
-    
+ 
+//     Output output;
+//     output.connectorId = connector->connector_id;
+//     output.crtcId = crtcId;
+//     output.modes = modes;
+//     output.oldCrtc = drmModeGetCrtc(_mDriFd, crtcId);
+//     output.resolution = Size(width, height);
+//     
     _mCrtcAllocator |= (1 << crtc);
     
     return output;

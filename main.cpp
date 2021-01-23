@@ -1,10 +1,15 @@
 #include "GraphicsContext.hpp"
+#include "LinuxFbDrmScreen.h"
 #include "common.h"
 
 #include <unistd.h>
 
 int main(int argc, const char * argv[]) 
 {
+    LinuxFbDrmScreen screen;
+    screen.initialize();
+    
+/**
     GraphicsContext gc = GraphicsContext();
     gc.setup();
     
@@ -38,6 +43,6 @@ int main(int argc, const char * argv[])
         gc.fillRect(2000, 300, 300, 150);
         gc.clear();
     }
-    
+*/
     return 0;
 }

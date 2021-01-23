@@ -4,11 +4,13 @@
 #include <sys/mman.h>
 
 #include <vector>
+#include <iostream> // TODO: remove
 
 #include "Size.hpp"
 
 #include <xf86drm.h>
 #include <xf86drmMode.h>
+#include <drm_fourcc.h>
 
 class Image;
 
@@ -43,11 +45,16 @@ public:
     };
     
     struct Output {
-        Output() : connectorId(0), isModeSet(false), mode(0), resolution(Size()), crtcId(0), oldCrtc(nullptr) { }
+        Output() : connectorId(0), isModeSet(false), mode(0), drmFormat(DRM_FORMAT_XRGB8888), 
+                   resolution(Size()), crtcId(0), oldCrtc(nullptr) { }
+        ~Output() { 
+            std::cout << "~Output()" << std::endl;
+        }
         uint32_t connectorId;
         bool isModeSet;
         std::vector<drmModeModeInfo> modes;
         int mode;
+        uint32_t drmFormat;
         Size resolution;
         uint32_t crtcId;
         drmModeCrtc *oldCrtc;
@@ -57,6 +64,7 @@ public:
         void cleanup(LinuxFbDrmDevice *device);
     };
     
+    int outputCount() const { return _mOutputs.size(); }
     Output *output(int index) { return &_mOutputs.at(index); }
     
 private:    
