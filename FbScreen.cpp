@@ -27,5 +27,12 @@ void FbScreen::setGeometry(const Rect &rect)
 
 void FbScreen::redraw()
 {
-
+    // TODO
+    // Foreach region to redraw
+    //    Foreach window on screen that intersect the region
+    //       draw interecting window content
+    // Draw cursor
+    //
+    // - All painting should happen on mScreenImage.
+    // - This method should eventually return a region or rect
 }

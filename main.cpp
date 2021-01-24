@@ -1,13 +1,59 @@
 #include "GraphicsContext.hpp"
+#include "LinuxFbScreen.h"
 #include "LinuxFbDrmScreen.h"
 #include "common.h"
 
-#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <errno.h>
 
-int main(int argc, const char * argv[]) 
+void usageError(const char *programName)
 {
-    LinuxFbDrmScreen screen;
-    screen.initialize();
+    fflush(stdout);
+    fprintf(stderr, "Usage: %s [-fb[ ][number]]\n", programName);
+    fprintf(stderr, "If no options are provided, DRM will be used.\n");
+    exit(EXIT_FAILURE);
+}
+
+bool parseInt(const char *str, long *value)
+{
+    char *endPtr;
+    *value = strtol(str, &endPtr, 10);
+    
+    return !( (*value == 0 && errno == EINVAL) || 
+               errno == ERANGE || 
+               *endPtr != '\0' );
+}
+
+int main(int argc, const char *argv[])
+{
+    Screen *screen;
+    
+    if (argc >= 2) {
+        short int frameBufferNumber = 0;
+        
+        if (strncmp(argv[1], "-fb", 3) == 0) {
+            const char *candidateFbStr = argc > 2 ? argv[2] : &argv[1][3];
+            long candidateFb;
+            if (*candidateFbStr != '\0') {
+                if (parseInt(candidateFbStr, &candidateFb)) {
+                    frameBufferNumber = candidateFb;
+                } else {
+                    usageError(argv[0]);
+                }
+            }
+        } else {
+            usageError(argv[0]);
+        }
+        
+        screen = new LinuxFbScreen(frameBufferNumber);
+    } else {
+        screen = new LinuxFbDrmScreen();
+    }
+    
+    screen->initialize();
     
 /**
     GraphicsContext gc = GraphicsContext();
