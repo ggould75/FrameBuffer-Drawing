@@ -22,7 +22,13 @@ void FbScreen::setGeometry(const Rect &rect)
     delete _mPainter;
     _mPainter = nullptr;
     mGeometry = rect;
-    mScreenImage = new Image(); // TODO: recreate for the new size/format
+    mScreenImage = Image(); // TODO: pass size/format
+}
+
+void FbScreen::initializeCompositor()
+{
+    mScreenImage = Image(); // TODO: pass size/format
+    // TODO: schedule update event? Do I need this?
 }
 
 void FbScreen::redraw()

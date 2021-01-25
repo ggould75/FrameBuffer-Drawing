@@ -24,7 +24,7 @@ private:
     } _mMmap;
     
     int _mFbFd;
-    short int _mfbNumber;
+    short int _mFbNumber;
     
     Image _mFbScreenImage;
     Painter *_mBlitterPainter;

@@ -29,6 +29,8 @@ bool LinuxFbDrmScreen::initialize()
         mGeometry = Rect(output->resolution);
     }
     
+    // TODO: set mDepth, mFormat, mScreenImage
+    
     return true;
 }
 

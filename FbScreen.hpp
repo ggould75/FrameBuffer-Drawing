@@ -2,8 +2,8 @@
 #define FBSCREEN_H
 
 #include "Screen.hpp"
+#include "Image.hpp"
 
-class Image;
 class Painter;
 
 class FbScreen : public Screen
@@ -22,8 +22,11 @@ public:
     
 protected:
     Rect mGeometry;
-    Image *mScreenImage;
-    int mDepth;
+    Image mScreenImage;
+    int mDepth; 
+    // TODO: add Image::Format mFormat;
+    
+    void initializeCompositor();
     
 private:
     Painter *_mPainter;
