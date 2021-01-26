@@ -53,6 +53,7 @@ static int openTtyDevice()
     const char *const ttyDevs[] = {
         "/dev/tty0",
         "/dev/tty",
+        "/dev/ttyS0",
         "/dev/console", 0
     };
     
@@ -61,6 +62,7 @@ static int openTtyDevice()
         if ((fd = open(*dev, O_RDWR | O_CLOEXEC)) < 0) {
             cerr << "Failed to open " << *dev << " (" << errno << "): " << strerror(errno) << endl;
         } else {
+            cout << "Using " << *dev << endl;
             break;
         }
     }
@@ -174,7 +176,9 @@ bool LinuxFbScreen::initialize()
     FbScreen::initializeCompositor();
     _mFbScreenImage = Image(); // TODO: init with (_mMmap.data, absoluteGeometry.width(), absoluteGeometry.height(), mMmap.bytesPerLine, 
     
-    _mTtyFd = openTtyDevice();
+    if ((_mTtyFd = openTtyDevice()) < 0) {
+        return false;
+    }
     
     switchToGraphicsMode(_mTtyFd, &_mOldTtyMode);
     blankScreen(_mTtyFd);
