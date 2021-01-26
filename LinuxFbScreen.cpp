@@ -13,6 +13,7 @@
 #include <iostream>
 
 #include <linux/fb.h>
+#include <linux/kd.h>
 
 using namespace std;
 
@@ -47,9 +48,48 @@ static Rect adjustGeometry(const fb_var_screeninfo &variableInfo)
     return Rect(left, top, width, height);
 }
 
+static int openTtyDevice()
+{
+    const char *const ttyDevs[] = {
+        "/dev/tty0",
+        "/dev/tty",
+        "/dev/console", 0
+    };
+    
+    int fd = -1;
+    for (const char * const *dev = ttyDevs; *dev; ++dev) {
+        if ((fd = open(*dev, O_RDWR | O_CLOEXEC)) < 0) {
+            cerr << "Failed to open " << *dev << " (" << errno << "): " << strerror(errno) << endl;
+        } else {
+            break;
+        }
+    }
+    
+    return fd;
+}
+
+static void restoreAndCloseTty(int ttyFd, int oldMode)
+{
+    ioctl(ttyFd, KDSETMODE, oldMode);
+    close(ttyFd);
+}
+
+static void switchToGraphicsMode(int ttyFd, int *oldMode)
+{
+    if (ioctl(ttyFd, KDGETMODE, oldMode) == 0 && *oldMode != KD_GRAPHICS) {
+        ioctl(ttyFd, KDSETMODE, KD_GRAPHICS);
+    }
+}
+
+static void blankScreen(int ttyFd)
+{
+    ioctl(ttyFd, FBIOBLANK, VESA_NO_BLANKING);
+}
+
 LinuxFbScreen::LinuxFbScreen(short int fbNumber) 
     : _mFbNumber(fbNumber),
       _mFbFd(-1), 
+      _mTtyFd(-1),
       _mBlitterPainter(nullptr)
 {
     _mMmap.data = nullptr;
@@ -64,6 +104,10 @@ LinuxFbScreen::~LinuxFbScreen()
         close(_mFbFd);
     }
     
+    if (_mTtyFd != -1) {
+        restoreAndCloseTty(_mTtyFd, _mOldTtyMode);
+    }
+    
     delete _mBlitterPainter;
 }
 
@@ -72,7 +116,7 @@ bool LinuxFbScreen::initialize()
     char devicePath[12];
     sprintf(devicePath, "/dev/fb%d", _mFbNumber);
     struct stat sb;
-    int openFlags = O_RDONLY | O_CLOEXEC;
+    int openFlags = O_RDWR | O_CLOEXEC;
     
     if (stat(devicePath, &sb) < 0) {
         cerr << "Couldn't find " << devicePath << ". Trying with alternative path..." << endl;
@@ -115,23 +159,25 @@ bool LinuxFbScreen::initialize()
     mGeometry = relativeGeometry;
     // TODO: mFormat = determineFormat(variableInfo, mDepth);
     
-    _mMmap.bytesPerLine = fixedInfo.line_length;
-    _mMmap.length = fixedInfo.smem_len;
-    
-    unsigned char *data = (unsigned char *)mmap(0, _mMmap.length, PROT_READ | PROT_WRITE, MAP_SHARED, _mFbFd, (off_t)0);
+    unsigned char *data = (unsigned char *)mmap(0, fixedInfo.smem_len, 
+                                                PROT_READ | PROT_WRITE, MAP_SHARED, _mFbFd, 0);
     if (data == MAP_FAILED) {
         cerr << "Failed to map fb (" << errno << "): " << strerror(errno) << endl;
         return false;
     }
     
+    _mMmap.bytesPerLine = fixedInfo.line_length;
+    _mMmap.length = fixedInfo.smem_len;
     _mMmap.offset = absoluteGeometry.top() * _mMmap.bytesPerLine + absoluteGeometry.left() * mDepth / 8;
     _mMmap.data = data + _mMmap.offset;
     
     FbScreen::initializeCompositor();
     _mFbScreenImage = Image(); // TODO: init with (_mMmap.data, absoluteGeometry.width(), absoluteGeometry.height(), mMmap.bytesPerLine, 
     
-    // TODO: switch to graphics mode
-    // TODO: blank screen
+    _mTtyFd = openTtyDevice();
+    
+    switchToGraphicsMode(_mTtyFd, &_mOldTtyMode);
+    blankScreen(_mTtyFd);
     
     return true;
 }

@@ -23,6 +23,9 @@ private:
         int length;
     } _mMmap;
     
+    int _mTtyFd;
+    int _mOldTtyMode;
+    
     int _mFbFd;
     short int _mFbNumber;
     
