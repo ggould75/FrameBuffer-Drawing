@@ -14,7 +14,9 @@ LinuxFbDrmScreen::~LinuxFbDrmScreen()
 
 bool LinuxFbDrmScreen::initialize()
 {
-    _mDevice = new LinuxFbDrmDevice(1);
+    // FIXME: the working dri card seems to be switching between /dev/dri/card0 and /dev/dri/card1
+    // at every system restart
+    _mDevice = new LinuxFbDrmDevice(0);
     
     if (!_mDevice->open()) {
         return false;

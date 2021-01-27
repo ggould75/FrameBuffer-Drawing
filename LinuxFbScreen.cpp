@@ -1,6 +1,7 @@
 #include "LinuxFbScreen.h"
 #include "Painter.hpp"
 #include "Rect.hpp"
+#include "common.h"
 
 #include <sys/mman.h>
 #include <sys/ioctl.h>
@@ -193,6 +194,17 @@ bool LinuxFbScreen::initialize()
         blankScreen(_mTtyFd);
     }
     
+#if ENABLE_DEBUG == 1
+    cout << "Visible res: " << variableInfo.xres << " x " << variableInfo.yres  
+         << ", Virtual res: " << variableInfo.xres_virtual << " x " << variableInfo.yres_virtual
+         << ", Offset: (" << variableInfo.xoffset << ", " << variableInfo.yoffset << ")" << endl
+         << "Framebuffer size: ~" << fixedInfo.smem_len / 1024 / 1024 << " MB"
+         << ", Bytes/scanline: " << fixedInfo.line_length
+         << ", grayscale: " << variableInfo.grayscale
+         << ", bpp: " << variableInfo.bits_per_pixel << endl
+         << "Acceleration type: " << fixedInfo.accel << endl;
+#endif
+         
     return true;
 }
 
