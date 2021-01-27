@@ -1,7 +1,7 @@
 #ifndef GRAPHICSCONTEXT_H
 #define GRAPHICSCONTEXT_H
 
-#include "Device.hpp"
+#include <stdint.h>
 
 class GraphicsContextPrivate;
 
@@ -24,7 +24,7 @@ public:
     void clear();
 
 private:
-    Device *m_device;
+    //Device *m_device;
     GraphicsContextPrivate *d_ptr;
 };
 
