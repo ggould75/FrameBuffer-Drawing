@@ -51,8 +51,8 @@ static Rect adjustGeometry(const fb_var_screeninfo &variableInfo)
 static int openTtyDevice()
 {
     const char *const ttyDevs[] = {
-        "/dev/tty0",
         "/dev/tty",
+        "/dev/tty0",
         "/dev/ttyS0",
         "/dev/console", 0
     };
@@ -62,7 +62,7 @@ static int openTtyDevice()
         if ((fd = open(*dev, O_RDWR | O_CLOEXEC)) < 0) {
             cerr << "Failed to open " << *dev << " (" << errno << "): " << strerror(errno) << endl;
         } else {
-            cout << "Using " << *dev << endl;
+            cout << "Valid " << *dev << " found" << endl;
             break;
         }
     }
@@ -78,20 +78,30 @@ static void restoreAndCloseTty(int ttyFd, int oldMode)
 
 static void switchToGraphicsMode(int ttyFd, int *oldMode)
 {
-    if (ioctl(ttyFd, KDGETMODE, oldMode) == 0 && *oldMode != KD_GRAPHICS) {
+    if (ioctl(ttyFd, KDGETMODE, oldMode) < 0) {
+        cerr << "KDGETMODE failed (" << errno << "): " << strerror(errno) << endl;
+        return;
+    }
+    if (*oldMode != KD_GRAPHICS) {
         ioctl(ttyFd, KDSETMODE, KD_GRAPHICS);
     }
 }
 
 static void blankScreen(int ttyFd)
 {
-    ioctl(ttyFd, FBIOBLANK, VESA_NO_BLANKING);
+    int result = ioctl(ttyFd, FBIOBLANK, VESA_NO_BLANKING);
+    if (result < 0) {
+        cerr << "FBIOBLANK failed (" << errno << "): " << strerror(errno) << endl;
+        return;
+    }
 }
 
 LinuxFbScreen::LinuxFbScreen(short int fbNumber) 
     : _mFbNumber(fbNumber),
       _mFbFd(-1), 
       _mTtyFd(-1),
+      _mOldTtyMode(-1),
+      _shouldSaveAndRestoreTtyMode(false),
       _mBlitterPainter(nullptr)
 {
     _mMmap.data = nullptr;
@@ -117,8 +127,10 @@ bool LinuxFbScreen::initialize()
 {
     char devicePath[12];
     sprintf(devicePath, "/dev/fb%d", _mFbNumber);
-    struct stat sb;
+    
     int openFlags = O_RDWR | O_CLOEXEC;
+    
+    struct stat sb;
     
     if (stat(devicePath, &sb) < 0) {
         cerr << "Couldn't find " << devicePath << ". Trying with alternative path..." << endl;
@@ -140,7 +152,7 @@ bool LinuxFbScreen::initialize()
             return false;
         }
     }
-    
+        
     fb_fix_screeninfo fixedInfo;
     fb_var_screeninfo variableInfo;
     memset(&fixedInfo, 0, sizeof(fixedInfo));
@@ -176,14 +188,17 @@ bool LinuxFbScreen::initialize()
     FbScreen::initializeCompositor();
     _mFbScreenImage = Image(); // TODO: init with (_mMmap.data, absoluteGeometry.width(), absoluteGeometry.height(), mMmap.bytesPerLine, 
     
-    if ((_mTtyFd = openTtyDevice()) < 0) {
-        return false;
+    if (_shouldSaveAndRestoreTtyMode && (_mTtyFd = openTtyDevice()) > 0) {
+        switchToGraphicsMode(_mTtyFd, &_mOldTtyMode);
+        blankScreen(_mTtyFd);
     }
     
-    switchToGraphicsMode(_mTtyFd, &_mOldTtyMode);
-    blankScreen(_mTtyFd);
-    
     return true;
+}
+
+void LinuxFbScreen::clearScreen()
+{
+    memset(_mMmap.data, 0, _mMmap.length);
 }
 
 void LinuxFbScreen::redraw()

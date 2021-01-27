@@ -55,6 +55,11 @@ int main(int argc, const char *argv[])
     
     screen->initialize();
     
+    LinuxFbScreen *fbScreen = dynamic_cast<LinuxFbScreen *>(screen);
+    if (fbScreen) {
+        fbScreen->clearScreen();
+    }
+    
 /**
     GraphicsContext gc = GraphicsContext();
     gc.setup();

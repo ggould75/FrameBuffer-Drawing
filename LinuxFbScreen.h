@@ -14,7 +14,8 @@ public:
     
     bool initialize() override;
     void redraw() override;
-
+    void clearScreen();
+    
 private:
     struct {
         unsigned char *data;
@@ -25,6 +26,7 @@ private:
     
     int _mTtyFd;
     int _mOldTtyMode;
+    bool _shouldSaveAndRestoreTtyMode;
     
     int _mFbFd;
     short int _mFbNumber;
