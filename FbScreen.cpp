@@ -2,14 +2,14 @@
 #include "Painter.hpp"
 #include "Image.hpp"
 
-FbScreen::FbScreen()
+FbScreen::FbScreen() : mFormat(Image::Format_RGB16), _mPainter(nullptr)
 {
 
 }
 
 FbScreen::~FbScreen()
 {
-
+    delete _mPainter;
 }
 
 bool FbScreen::initialize() 
@@ -22,13 +22,13 @@ void FbScreen::setGeometry(const Rect &rect)
     delete _mPainter;
     _mPainter = nullptr;
     mGeometry = rect;
-    mScreenImage = Image(); // TODO: pass size/format
+    mScreenImage = Image(rect.size(), mFormat);
 }
 
 void FbScreen::initializeCompositor()
 {
-    mScreenImage = Image(); // TODO: pass size/format
-    // TODO: schedule update event? Do I need this?
+    mScreenImage = Image(mGeometry.size(), mFormat);
+    // TODO: schedule update event?
 }
 
 void FbScreen::redraw()

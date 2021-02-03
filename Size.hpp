@@ -10,6 +10,8 @@ public:
     inline int width() const noexcept { return _mWidth; }
     inline int height() const noexcept { return _mHeight; }
     
+    inline bool isEmpty() const noexcept { return _mWidth < 1 || _mHeight < 1; }
+    
 private:
     int _mWidth;
     int _mHeight;
