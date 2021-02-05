@@ -1,7 +1,55 @@
+#include "DrawEngine.hpp"
+#include "Image.hpp"
+
 #include <iostream>
 
-#include "GraphicsContext_p.hpp"
-#include "GraphicsContext.hpp"
+RasterBuffer::RasterBuffer() : _mWidth(0), _mHeight(0), _mBuffer(nullptr)
+{
+}
+
+void RasterBuffer::prepareFromImage(Image *image)
+{
+    _mWidth = image->width();
+    _mHeight = image->height();
+    _mBuffer = image->bytes();
+}
+
+RasterDrawEngine::RasterDrawEngine(Drawable *drawable) : _mDrawable(drawable), _mRasterBuffer(nullptr)
+{
+    init();
+}
+
+void RasterDrawEngine::init()
+{
+    _mRasterBuffer = new RasterBuffer();
+    
+    Image *imageDrawable = dynamic_cast<Image *>(_mDrawable);
+    if (imageDrawable) {
+        _mRasterBuffer->prepareFromImage(imageDrawable);
+    } else {
+        std::cerr << "Unimplemented drawable subclass" << std::endl;
+    }
+}
+
+RasterDrawEngine::~RasterDrawEngine()
+{
+    _mDrawable = nullptr;
+    delete _mRasterBuffer;
+}
+
+void RasterDrawEngine::drawPoint(int x, int y)
+{
+    
+}
+
+void RasterDrawEngine::drawLine(int x0, int y0, int x1, int y1)
+{
+    
+}
+
+/** 
+ * Just moving this old code here for now, until I understand how to deal with rasterization properly...
+ * 
 
 void GraphicsContextPrivate::bresenham(GraphicsContext& context, int x0, int y0, int x1, int y1)
 {
@@ -95,3 +143,4 @@ void GraphicsContextPrivate::circleMidPoint(GraphicsContext& context, int center
         circlePlotPoints(context, centerX, centerY, x, y);
     }
 }
+*/

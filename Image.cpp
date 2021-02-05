@@ -1,10 +1,11 @@
 #include "Image.hpp"
 #include "ImageData_p.hpp"
+#include "DrawEngine.hpp"
 #include "Size.hpp"
 
 #include <stdlib.h>
 
-Image::Image() noexcept
+Image::Image() noexcept : _dPtr(nullptr)
 {
 
 }
@@ -24,10 +25,60 @@ Image::~Image()
     delete _dPtr;
 }
 
+int Image::width() const
+{
+    return _dPtr ? _dPtr->width : 0;
+}
+
+int Image::height() const
+{
+    return _dPtr ? _dPtr->height : 0;
+}
+
+int Image::depth() const
+{
+    return _dPtr ? _dPtr->depth: 0;
+}
+
+Image::Format Image::format() const
+{
+    return _dPtr ? _dPtr->format : Format::Format_Invalid;
+}
+
+unsigned char *Image::bytes()
+{
+    // TODO: For now I just return the current data, but at some point I may actually need to return a copy 
+    // of the data to avoid sync issues since this is shared between Image and DrawEngine!
+    return _dPtr ? _dPtr->data : nullptr;
+}
+
+DrawEngine *Image::drawEngine() const
+{
+    if (!_dPtr) {
+        return nullptr;
+    }
+    
+    if (!_dPtr->drawEngine) {
+        Drawable *drawable = const_cast<Image *>(this);
+        _dPtr->drawEngine = new RasterDrawEngine(drawable);
+    }
+    
+    return _dPtr->drawEngine;
+}
+
 ImageDataPrivate::ImageDataPrivate() :
     width(0), height(0), depth(0), bytesPerLine(0), totalBytes(0),
     data(nullptr), isDataOwner(true),
-    format(Image::Format_RGB16)
+    format(Image::Format_RGB16),
+    drawEngine(nullptr)
+{
+}
+
+ImageDataPrivate::ImageDataPrivate(int width, int height, int depth, Image::Format format, 
+                                   std::size_t bytesPerLine, std::size_t totalBytes) :
+    width(width), height(height), depth(depth), 
+    bytesPerLine(bytesPerLine), totalBytes(totalBytes), format(format),
+    drawEngine(nullptr)
 {
 }
 
@@ -36,9 +87,11 @@ ImageDataPrivate::~ImageDataPrivate()
     if (data && isDataOwner) {
         free(data);
     }
+    
+    delete drawEngine;
 }
 
-ImageDataPrivate * ImageDataPrivate::create(const Size &size, Image::Format format)
+ImageDataPrivate *ImageDataPrivate::create(const Size &size, Image::Format format)
 {
     if (size.isEmpty() || format == Image::Format_Invalid) {
         return nullptr;
@@ -52,14 +105,8 @@ ImageDataPrivate * ImageDataPrivate::create(const Size &size, Image::Format form
         return nullptr;
     }
     
-    ImageDataPrivate *imageData = new ImageDataPrivate();
-    imageData->width = width;
-    imageData->height = height;
-    imageData->depth = depth;
-    imageData->format = format;
-    imageData->bytesPerLine = imageParams.bytesPerLine;
-    imageData->totalBytes = imageParams.totalBytes;
-    
+    auto imageData = 
+        new ImageDataPrivate(width, height, depth, format, imageParams.bytesPerLine, imageParams.totalBytes);
     imageData->data = (unsigned char *)malloc(imageData->totalBytes);
     if (!imageData->data) {
         return nullptr;
@@ -68,8 +115,8 @@ ImageDataPrivate * ImageDataPrivate::create(const Size &size, Image::Format form
     return imageData;
 }
 
-ImageDataPrivate * ImageDataPrivate::create(unsigned char *data, int width, int height, int bytesPerLine, 
-                                            Image::Format format)
+ImageDataPrivate *ImageDataPrivate::create(unsigned char *data, int width, int height, int bytesPerLine, 
+                                           Image::Format format)
 {
     if (width <= 0 || height <= 0 || !data || format == Image::Format_Invalid) {
         return nullptr;
@@ -82,20 +129,15 @@ ImageDataPrivate * ImageDataPrivate::create(unsigned char *data, int width, int 
     }
     std::size_t totalBytes = bytesPerLine * height; 
     
-    ImageDataPrivate *imageData = new ImageDataPrivate();
-    imageData->width = width;
-    imageData->height = height;
-    imageData->depth = depth;
-    imageData->format = format;
-    imageData->bytesPerLine = bytesPerLine;
-    imageData->totalBytes = totalBytes;    
+    auto imageData = new ImageDataPrivate(width, height, depth, format, bytesPerLine, totalBytes);    
     imageData->data = data;
     imageData->isDataOwner = false;
     
     return imageData;
 }
     
-ImageDataPrivate::ImageSizeParameters ImageDataPrivate::calculateImageParameters(int width, int height, int depth)
+ImageDataPrivate::ImageSizeParameters 
+ImageDataPrivate::calculateImageParameters(int width, int height, int depth)
 {
     // Note: I should check for overflow!
     

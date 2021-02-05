@@ -5,14 +5,19 @@
 
 #include <cstddef>
 
+class DrawEngine;
+
 struct ImageDataPrivate
 {
     ImageDataPrivate();
+    ImageDataPrivate(int width, int height, int depth, Image::Format format, 
+                     std::size_t bytesPerLine, std::size_t totalBytes);
     ~ImageDataPrivate();
     
     static ImageDataPrivate *create(const Size &size, Image::Format format);
     static ImageDataPrivate *create(unsigned char *data, int width, int height, int bytesPerLine, Image::Format format);
     
+    // TODO: double check if I really need this struct
     struct ImageSizeParameters {
         std::size_t bytesPerLine;
         std::size_t totalBytes;
@@ -32,6 +37,8 @@ struct ImageDataPrivate
     bool isDataOwner;
     
     Image::Format format;
+    
+    DrawEngine *drawEngine;
 };
 
 #endif // IMAGEDATAPRIVATE_H
