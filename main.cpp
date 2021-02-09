@@ -1,5 +1,7 @@
 #include "LinuxFbScreen.h"
 #include "LinuxFbDrmScreen.h"
+#include "Painter.hpp"
+#include "Image.hpp"
 #include "common.h"
 
 #include <string.h>
@@ -58,6 +60,13 @@ int main(int argc, const char *argv[])
     if (fbScreen) {
         fbScreen->clearScreen();
     }
+    
+    Image *image = new Image(Size(320, 200), Image::Format_RGB16);
+    Painter *painter = new Painter(image);
+    painter->drawLine(0, 0, 319, 199);
+    painter->drawLine(319, 0, 0, 199);
+    delete image;
+    delete painter;
     
 /**
     GraphicsContext gc = GraphicsContext();
