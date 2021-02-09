@@ -61,8 +61,10 @@ static Image::Format determineFormat(const fb_var_screeninfo &info, int depth)
     Image::Format format = Image::Format_Invalid;
     switch (depth) {
         case 16: {
+            // For little-endian systems
             const fb_bitfield rgb565[4] = {{11, 5, 0}, {5, 6, 0},
                                            {0, 5, 0}, {0, 0, 0}};
+            // For big-endian systems                               
             const fb_bitfield bgr565[4] = {{0, 5, 0}, {5, 6, 0},
                                            {11, 5, 0}, {0, 0, 0}};
             if (memcmp(rgba, rgb565, 3 * sizeof(fb_bitfield)) == 0) {

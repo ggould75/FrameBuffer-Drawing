@@ -47,8 +47,8 @@ Image::Format Image::format() const
 
 unsigned char *Image::bytes()
 {
-    // TODO: For now I just return the current data, but at some point I may actually need to return a copy 
-    // of the data to avoid sync issues since this is shared between Image and DrawEngine!
+    // FIXME: I will eventually need to return a copy instead of actual data for dealing with sync issues, 
+    // as this is shared between Image and DrawEngine
     return _dPtr ? _dPtr->data : nullptr;
 }
 
@@ -139,8 +139,7 @@ ImageDataPrivate *ImageDataPrivate::create(unsigned char *data, int width, int h
 ImageDataPrivate::ImageSizeParameters 
 ImageDataPrivate::calculateImageParameters(int width, int height, int depth)
 {
-    // Note: I should check for overflow!
-    
+    // FIXME: this multiplication and the one on totalBytes could potentially overflow
     std::size_t bytesPerLine = width * depth;
     // Ensure is a multiple of 4
     bytesPerLine = (bytesPerLine >> 5) << 2;
