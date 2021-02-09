@@ -24,7 +24,7 @@ protected:
     Rect mGeometry;
     Image mScreenImage;
     int mDepth; 
-    // TODO: add Image::Format mFormat;
+    Image::Format mFormat;
     
     void initializeCompositor();
     

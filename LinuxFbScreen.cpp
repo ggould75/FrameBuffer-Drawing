@@ -49,6 +49,38 @@ static Rect adjustGeometry(const fb_var_screeninfo &variableInfo)
     return Rect(left, top, width, height);
 }
 
+static Image::Format determineFormat(const fb_var_screeninfo &info, int depth)
+{
+    const fb_bitfield rgba[4] = {
+        info.red,
+        info.green,
+        info.blue,
+        info.transp
+    };
+    
+    Image::Format format = Image::Format_Invalid;
+    switch (depth) {
+        case 16: {
+            // For little-endian systems
+            const fb_bitfield rgb565[4] = {{11, 5, 0}, {5, 6, 0},
+                                           {0, 5, 0}, {0, 0, 0}};
+            // For big-endian systems                               
+            const fb_bitfield bgr565[4] = {{0, 5, 0}, {5, 6, 0},
+                                           {11, 5, 0}, {0, 0, 0}};
+            if (memcmp(rgba, rgb565, 3 * sizeof(fb_bitfield)) == 0) {
+                format = Image::Format_RGB16;
+            } else if (memcmp(rgba, bgr565, 3 * sizeof(fb_bitfield)) == 0) {
+                format = Image::Format_RGB16;
+            }
+            break;
+        }
+        default:
+            break;
+    }
+    
+    return format;
+}
+
 static int openTtyDevice()
 {
     const char *const ttyDevs[] = {
@@ -172,7 +204,7 @@ bool LinuxFbScreen::initialize()
     Rect absoluteGeometry = adjustGeometry(variableInfo);
     Rect relativeGeometry = Rect(0, 0, absoluteGeometry.size().width(), absoluteGeometry.size().height());
     mGeometry = relativeGeometry;
-    // TODO: mFormat = determineFormat(variableInfo, mDepth);
+    mFormat = determineFormat(variableInfo, mDepth);
     
     unsigned char *data = (unsigned char *)mmap(0, fixedInfo.smem_len, 
                                                 PROT_READ | PROT_WRITE, MAP_SHARED, _mFbFd, 0);
@@ -187,7 +219,8 @@ bool LinuxFbScreen::initialize()
     _mMmap.data = data + _mMmap.offset;
     
     FbScreen::initializeCompositor();
-    _mFbScreenImage = Image(); // TODO: init with (_mMmap.data, absoluteGeometry.width(), absoluteGeometry.height(), mMmap.bytesPerLine, 
+    _mFbScreenImage = 
+        Image(_mMmap.data, absoluteGeometry.width(), absoluteGeometry.height(), _mMmap.bytesPerLine, mFormat);
     
     if (_shouldSaveAndRestoreTtyMode && (_mTtyFd = openTtyDevice()) > 0) {
         switchToGraphicsMode(_mTtyFd, &_mOldTtyMode);

@@ -1,4 +1,3 @@
-#include "GraphicsContext.hpp"
 #include "LinuxFbScreen.h"
 #include "LinuxFbDrmScreen.h"
 #include "common.h"
