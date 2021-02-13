@@ -66,6 +66,11 @@ DrawEngine *Image::drawEngine() const
     return _dPtr->drawEngine;
 }
 
+bool Image::isNull() const
+{
+    return !_dPtr;
+}
+
 ImageDataPrivate::ImageDataPrivate() :
     width(0), height(0), depth(0), bytesPerLine(0), totalBytes(0),
     data(nullptr), isDataOwner(true),

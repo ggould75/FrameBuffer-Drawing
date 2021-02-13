@@ -63,8 +63,10 @@ int main(int argc, const char *argv[])
     
     Image *image = new Image(Size(320, 200), Image::Format_RGB16);
     Painter *painter = new Painter(image);
+    painter->begin();
     painter->drawLine(0, 0, 319, 199);
     painter->drawLine(319, 0, 0, 199);
+    painter->end();
     delete image;
     delete painter;
     

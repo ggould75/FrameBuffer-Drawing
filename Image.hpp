@@ -27,6 +27,8 @@ public:
     
     DrawEngine *drawEngine() const override;
     
+    bool isNull() const;
+    
 private:
     ImageDataPrivate *_dPtr;
 };
