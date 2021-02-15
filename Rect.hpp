@@ -17,20 +17,11 @@ public:
 //         
 //     }
     
-    inline int left() const noexcept { return _mX1; }
-    inline int top() const noexcept { return _mY1; }
-    
-    inline int width() const noexcept {
-        return _mX2 - _mX1 + 1;
-    }
-    
-    inline int height() const noexcept {
-        return _mY2 - _mY1 + 1;
-    }
-    
-    inline Size size() const noexcept {
-        return Size(width(), height());
-    }
+    int left() const noexcept;
+    int top() const noexcept;
+    int width() const noexcept;
+    int height() const noexcept;
+    Size size() const noexcept;
     
 private:
     int _mX1;
@@ -38,5 +29,30 @@ private:
     int _mX2;
     int _mY2;
 };
+
+inline int Rect::left() const noexcept 
+{ 
+    return _mX1; 
+}
+
+inline int Rect::top() const noexcept 
+{
+    return _mY1; 
+}
+
+inline int Rect::width() const noexcept 
+{
+    return _mX2 - _mX1 + 1;
+}
+
+inline int Rect::height() const noexcept 
+{
+    return _mY2 - _mY1 + 1;
+}
+
+inline Size Rect::size() const noexcept 
+{
+    return Size(width(), height());
+}
 
 #endif // RECT_HPP

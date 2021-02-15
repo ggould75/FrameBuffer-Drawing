@@ -7,14 +7,29 @@ public:
     Size() noexcept : _mWidth(0), _mHeight(0) { }
     Size(int width, int height) noexcept : _mWidth(width), _mHeight(height) { }
     
-    inline int width() const noexcept { return _mWidth; }
-    inline int height() const noexcept { return _mHeight; }
+    int width() const noexcept;
+    int height() const noexcept;
     
-    inline bool isEmpty() const noexcept { return _mWidth < 1 || _mHeight < 1; }
+    bool isEmpty() const noexcept;
     
 private:
     int _mWidth;
     int _mHeight;
 };
 
+inline int Size::width() const noexcept
+{ 
+    return _mWidth; 
+}
+
+inline int Size::height() const noexcept 
+{ 
+    return _mHeight; 
+}
+    
+inline bool Size::isEmpty() const noexcept 
+{ 
+    return _mWidth < 1 || _mHeight < 1; 
+}
+    
 #endif // SIZE_HPP

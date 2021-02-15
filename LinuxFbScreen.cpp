@@ -202,7 +202,7 @@ bool LinuxFbScreen::initialize()
     
     mDepth = adjustDepthIfNeeded(variableInfo);
     Rect absoluteGeometry = adjustGeometry(variableInfo);
-    Rect relativeGeometry = Rect(0, 0, absoluteGeometry.size().width(), absoluteGeometry.size().height());
+    Rect relativeGeometry = Rect(absoluteGeometry.size());
     mGeometry = relativeGeometry;
     mFormat = determineFormat(variableInfo, mDepth);
     
