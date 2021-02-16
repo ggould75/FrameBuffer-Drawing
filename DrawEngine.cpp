@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-RasterBuffer::RasterBuffer() : _mWidth(0), _mHeight(0), _mBuffer(nullptr)
+RasterBuffer::RasterBuffer() : _mWidth(0), _mHeight(0), _mDepth(0), _mBytesPerLine(0), _mBuffer(nullptr)
 {
 }
 
@@ -11,10 +11,13 @@ void RasterBuffer::prepareFromImage(Image *image)
 {
     _mWidth = image->width();
     _mHeight = image->height();
+    _mDepth = image->depth();
+    _mBytesPerLine = image->bytesPerLine();
     _mBuffer = image->bytes();
 }
 
-RasterDrawEngine::RasterDrawEngine(Drawable *drawable) : _mDrawable(drawable), _mRasterBuffer(nullptr)
+RasterDrawEngine::RasterDrawEngine(Drawable *drawable) 
+    : _mDrawable(drawable), _mRasterBuffer(nullptr), _mPixelValue(0)
 {
     init();
 }
@@ -37,39 +40,35 @@ RasterDrawEngine::~RasterDrawEngine()
     delete _mRasterBuffer;
 }
 
+void RasterDrawEngine::setPen(uint8_t red, uint8_t green, uint8_t blue)
+{
+    _mPixelValue = (red << 16) | (green << 8) | blue; // FIXME: works only for 32bpp!
+}
+
 void RasterDrawEngine::drawPoint(int x, int y)
 {
-    
+    drawPoint(x, _mRasterBuffer->scanLine(y));
 }
 
 void RasterDrawEngine::drawLine(int x0, int y0, int x1, int y1)
-{
-    
-}
-
-/** 
- * Just moving this old code here for now, until I understand how to deal with rasterization properly...
- * 
-
-void GraphicsContextPrivate::bresenham(GraphicsContext& context, int x0, int y0, int x1, int y1)
 {
     int dx = abs(x0 - x1);
     int dy = abs(y0 - y1);
     
     // Start/end points are equal
     if (dx == 0 && dy == 0) {
-        context.drawPixel(x0, y0, 0x00, 0xAA, 0xFF);
+        drawPoint(x0, _mRasterBuffer->scanLine(y0));
         return;
     } else if (dx == 0) {
-        // Vertical line
+        // Vertical line_mBytesPerLine
         for (int y = std::min(y0, y1); y <= std::max(y0, y1); y++) {
-            context.drawPixel(x0, y, 0x00, 0xAA, 0xFF);
+            drawPoint(x0, _mRasterBuffer->scanLine(y));
         }
         return;
     } else if (dy == 0) {
         // Horizontal line
         for (int x = std::min(x0, x1); x <= std::max(x0, x1); x++) {
-            context.drawPixel(x, y0, 0x00, 0xAA, 0xFF);
+            drawPoint(x, _mRasterBuffer->scanLine(y0));
         }
         return;
     }
@@ -89,7 +88,9 @@ void GraphicsContextPrivate::bresenham(GraphicsContext& context, int x0, int y0,
         xEnd = x1;
     }
 
-    context.drawPixel(x, y, 0x00, 0xAA, 0xFF);
+    unsigned char *scanLineY = _mRasterBuffer->scanLine(y);
+    
+    drawPoint(x, scanLineY);
  
     while (x < xEnd) {
         x++;
@@ -100,9 +101,24 @@ void GraphicsContextPrivate::bresenham(GraphicsContext& context, int x0, int y0,
             d += northEastIncrement;
         }
 
-        context.drawPixel(x, y, 0x00, 0xAA, 0xFF);
+        drawPoint(x, scanLineY);
     }
 }
+
+void RasterDrawEngine::drawPoint(int x, unsigned char *scanline)
+{
+    int depth = _mRasterBuffer->depth();
+    switch (depth) {
+        case 32:
+            scanline[x] = _mPixelValue;
+        case 16:
+            scanline[x] = _mPixelValue & 0xffff;
+    }
+}
+
+/** 
+ * Just moving this old code here for now, until I understand how to deal with rasterization properly...
+ * 
 
 void circlePlotPoints(GraphicsContext& context, int centerX, int centerY, int x, int y)
 {

@@ -13,6 +13,8 @@ public:
     bool begin();
     bool end();
     
+    void setPen(int red, int green, int blue);
+    
     void drawPoint(int x, int y);
     void drawLine(int x0, int y0, int x1, int y1);
     

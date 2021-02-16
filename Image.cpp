@@ -40,6 +40,11 @@ int Image::depth() const
     return _dPtr ? _dPtr->depth: 0;
 }
 
+int Image::bytesPerLine() const
+{
+    return _dPtr ? _dPtr->bytesPerLine : 0;
+}
+
 Image::Format Image::format() const
 {
     return _dPtr ? _dPtr->format : Format::Format_Invalid;
