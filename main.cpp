@@ -68,6 +68,9 @@ int main(int argc, const char *argv[])
     painter->drawLine(0, 0, 319, 199);
     painter->drawLine(319, 0, 0, 199);
     painter->end();
+    
+    screen->redraw(image);
+    
     delete image;
     delete painter;
     

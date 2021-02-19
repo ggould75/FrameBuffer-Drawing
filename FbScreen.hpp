@@ -20,6 +20,10 @@ public:
     
     virtual void redraw();
     
+    // TODO: temporary until I have defined the concept of window
+    // Once I have that, I'm supposed to do my drawing on the window's "backing store" and then take backingStore->image() and transfer that image to mScreenImage. Therefore eventually I should be able to replace this method with a simple redraw()...
+    virtual void redraw(Image *image);
+    
 protected:
     Rect mGeometry;
     Image mScreenImage;

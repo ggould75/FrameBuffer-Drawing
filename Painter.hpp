@@ -17,6 +17,7 @@ public:
     
     void drawPoint(int x, int y);
     void drawLine(int x0, int y0, int x1, int y1);
+    void drawImage(Point point, Image *image);
     
 private:
     PainterPrivate *_dPtr;

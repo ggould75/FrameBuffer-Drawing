@@ -41,4 +41,15 @@ void FbScreen::redraw()
     //
     // - All painting should happen on mScreenImage.
     // - This method should eventually return a region or rect
+    // - Eventually I will also need locks (mutex) when writing/reading an Image!
+}
+
+void redraw(Image *image)
+{
+    if (!_mPainter) {
+        _mPainter = new Painter(&mScreenImage);
+    }
+    
+    // Simply draw my beautiful art painting at screen origin for now
+    _mPainter->drawImage(Point(0, 0), image);
 }
