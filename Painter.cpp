@@ -41,6 +41,15 @@ bool Painter::end()
     return true;
 }
 
+void Painter::setPen(int red, int green, int blue)
+{
+    if (_dPtr->mDrawEngine == nullptr) {
+        return;
+    }
+
+    _dPtr->mDrawEngine->setPen(red, green, blue);
+}
+
 void Painter::drawPoint(int x, int y)
 {
     if (_dPtr->mDrawEngine == nullptr) {

@@ -22,6 +22,7 @@ public:
     int width() const;
     int height() const;
     int depth() const;
+    int bytesPerLine() const;
     Format format() const;
     unsigned char *bytes();
     
