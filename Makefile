@@ -1,5 +1,5 @@
 BINARY_NAME=fbd
-FLAGS=`pkg-config --cflags --libs libdrm`
+FLAGS=-std=c++11 `pkg-config --cflags --libs libdrm`
 ALL_FILES=Screen.cpp FbScreen.cpp LinuxFbScreen.cpp LinuxFbDrmDevice.cpp LinuxFbDrmScreen.cpp DrawEngine.cpp Image.cpp Painter.cpp Rect.cpp Size.cpp main.cpp
 
 default:
