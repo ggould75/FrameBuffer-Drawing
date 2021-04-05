@@ -30,7 +30,7 @@ bool parseInt(const char *str, long *value)
 
 int main(int argc, const char *argv[])
 {
-    Screen *screen;
+    FbScreen *screen;
     
     if (argc >= 2) {
         short int frameBufferNumber = 0;

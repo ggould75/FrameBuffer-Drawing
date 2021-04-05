@@ -1,6 +1,7 @@
 #include "FbScreen.hpp"
 #include "Painter.hpp"
 #include "Image.hpp"
+#include "Point.hpp"
 
 FbScreen::FbScreen() : mFormat(Image::Format_RGB16), _mPainter(nullptr)
 {
@@ -44,7 +45,7 @@ void FbScreen::redraw()
     // - Eventually I will also need locks (mutex) when writing/reading an Image!
 }
 
-void redraw(Image *image)
+void FbScreen::redraw(Image *image)
 {
     if (!_mPainter) {
         _mPainter = new Painter(&mScreenImage);

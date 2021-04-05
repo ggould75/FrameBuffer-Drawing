@@ -6,8 +6,8 @@
 class Rect
 {
 public:
-    Rect() noexcept : _mX1(0), _mY1(0), _mX2(-1), _mY2(-1) { }
-    Rect(const Size &size) noexcept : _mX1(0), _mY1(0), _mX2(size.width() - 1), _mY2(size.height() - 1) { }
+    constexpr Rect() noexcept;
+    constexpr Rect(const Size &size) noexcept;
     Rect(int left, int top, int width, int height) noexcept 
         : _mX1(left), 
           _mY1(top), 
@@ -29,6 +29,10 @@ private:
     int _mX2;
     int _mY2;
 };
+
+constexpr inline Rect::Rect() noexcept : _mX1(0), _mY1(0), _mX2(-1), _mY2(-1) { }
+
+constexpr inline Rect::Rect(const Size &size) noexcept : _mX1(0), _mY1(0), _mX2(size.width() - 1), _mY2(size.height() - 1) { }
 
 inline int Rect::left() const noexcept 
 { 

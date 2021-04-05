@@ -41,7 +41,7 @@ void LinuxFbDrmScreen::redraw()
 
 }
 
-void redraw(Image *image)
+void LinuxFbDrmScreen::redraw(Image *image)
 {
     FbScreen::redraw(image);
     

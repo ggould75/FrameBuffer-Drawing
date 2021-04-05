@@ -257,7 +257,7 @@ void LinuxFbScreen::redraw()
     // Shall I return a region or rect as the parent?
 }
 
-void redraw(Image *image)
+void LinuxFbScreen::redraw(Image *image)
 {
     FbScreen::redraw(image);
     
