@@ -23,12 +23,13 @@ void FbScreen::setGeometry(const Rect &rect)
     delete _mPainter;
     _mPainter = nullptr;
     mGeometry = rect;
-    mScreenImage = Image(rect.size(), mFormat);
+    mScreenImage = new Image(rect.size(), mFormat);
 }
 
 void FbScreen::initializeCompositor()
 {
-    mScreenImage = Image(mGeometry.size(), mFormat);
+    mScreenImage = new Image(mGeometry.size(), mFormat);
+    
     // TODO: schedule update event?
 }
 
@@ -48,7 +49,7 @@ void FbScreen::redraw()
 void FbScreen::redraw(Image *image)
 {
     if (!_mPainter) {
-        _mPainter = new Painter(&mScreenImage);
+        _mPainter = new Painter(mScreenImage);
         _mPainter->begin();
     }
     

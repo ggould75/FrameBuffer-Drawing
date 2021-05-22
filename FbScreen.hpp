@@ -26,7 +26,7 @@ public:
     
 protected:
     Rect mGeometry;
-    Image mScreenImage;
+    Image *mScreenImage;
     int mDepth; 
     Image::Format mFormat;
     

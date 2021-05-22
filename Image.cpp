@@ -23,6 +23,7 @@ Image::Image(unsigned char *data, int width, int height, int bytesPerLine, Forma
 Image::~Image()
 {
     delete _dPtr;
+    _dPtr = nullptr;
 }
 
 int Image::width() const
@@ -87,8 +88,8 @@ ImageDataPrivate::ImageDataPrivate() :
 ImageDataPrivate::ImageDataPrivate(int width, int height, int depth, Image::Format format, 
                                    std::size_t bytesPerLine, std::size_t totalBytes) :
     width(width), height(height), depth(depth), 
-    bytesPerLine(bytesPerLine), totalBytes(totalBytes), format(format),
-    data(nullptr), isDataOwner(true),
+    bytesPerLine(bytesPerLine), totalBytes(totalBytes),
+    data(nullptr), isDataOwner(true), format(format),
     drawEngine(nullptr)
 {
 }
