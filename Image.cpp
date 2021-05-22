@@ -88,6 +88,7 @@ ImageDataPrivate::ImageDataPrivate(int width, int height, int depth, Image::Form
                                    std::size_t bytesPerLine, std::size_t totalBytes) :
     width(width), height(height), depth(depth), 
     bytesPerLine(bytesPerLine), totalBytes(totalBytes), format(format),
+    data(nullptr), isDataOwner(true),
     drawEngine(nullptr)
 {
 }
@@ -167,7 +168,11 @@ int ImageDataPrivate::depthFromImageFormat(Image::Format format)
         case Image::Format_RGB16:
             depth = 16;
             break;
+        case Image::Format_RGB32:
+            depth = 32;
+            break;
         default:
+            assert(false && "Unhandled image format");
             break;
     }
     

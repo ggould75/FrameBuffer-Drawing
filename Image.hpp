@@ -11,6 +11,7 @@ class Image : public Drawable
 public:
     enum Format {
         Format_RGB16,
+        Format_RGB32,
         Format_Invalid,
     };
     

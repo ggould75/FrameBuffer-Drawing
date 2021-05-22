@@ -17,21 +17,23 @@ private:
     int _mHeight;
 };
 
-constexpr Size::Size() noexcept : _mWidth(0), _mHeight(0) { }
+constexpr Size::Size() noexcept 
+    : _mWidth(0), _mHeight(0) {}
 
-constexpr Size::Size(int width, int height) noexcept : _mWidth(width), _mHeight(height) { }
+constexpr Size::Size(int width, int height) noexcept 
+    : _mWidth(width), _mHeight(height) {}
 
 constexpr inline int Size::width() const noexcept
 { 
     return _mWidth; 
 }
 
-constexpr inline int Size::height() const noexcept 
+constexpr inline int Size::height() const noexcept
 { 
     return _mHeight; 
 }
     
-constexpr inline bool Size::isEmpty() const noexcept 
+constexpr inline bool Size::isEmpty() const noexcept
 { 
     return _mWidth < 1 || _mHeight < 1; 
 }

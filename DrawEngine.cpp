@@ -111,8 +111,13 @@ void RasterDrawEngine::drawPoint(int x, unsigned char *scanline)
     switch (depth) {
         case 32:
             scanline[x] = _mPixelValue;
+            break;
         case 16:
             scanline[x] = _mPixelValue & 0xffff;
+            break;
+        default:
+            assert(false && "Unhandled depth value when drawing a point");
+            break;
     }
 }
 
