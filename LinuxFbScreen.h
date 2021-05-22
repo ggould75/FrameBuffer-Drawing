@@ -14,6 +14,7 @@ public:
     
     bool initialize() override;
     void redraw() override;
+    void redraw(Image *image) override; // TODO: temporary, see base class
     void clearScreen();
     
 private:

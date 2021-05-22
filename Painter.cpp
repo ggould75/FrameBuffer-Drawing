@@ -3,6 +3,7 @@
 #include "DrawEngine.hpp"
 #include "Drawable.hpp"
 #include "Image.hpp"
+#include "Point.hpp"
 
 #include <iostream>
 
@@ -66,4 +67,14 @@ void Painter::drawLine(int x0, int y0, int x1, int y1)
     }
     
     _dPtr->mDrawEngine->drawLine(x0, y0, x1, y1);
+}
+
+void Painter::drawImage(Point point, Image *image)
+{
+    if (_dPtr->mDrawEngine == nullptr) {
+        return;
+    }
+    
+    // TODO: is this what I want for now?
+    //_dPtr->mDrawEngine->drawImage(point, image);
 }

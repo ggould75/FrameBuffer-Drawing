@@ -256,3 +256,24 @@ void LinuxFbScreen::redraw()
     //
     // Shall I return a region or rect as the parent?
 }
+
+void LinuxFbScreen::redraw(Image *image)
+{
+    FbScreen::redraw(image);
+    
+    if (!_mBlitterPainter) {
+        _mBlitterPainter = new Painter(&_mFbScreenImage);
+    }
+    
+//    if (touched.isEmpty())
+//        return touched;
+//
+//    if (!mBlitter)
+//        mBlitter = new QPainter(&mFbScreenImage);
+//
+//    mBlitter->setCompositionMode(QPainter::CompositionMode_Source);
+//    for (const QRect &rect : touched)
+//        mBlitter->drawImage(rect, mScreenImage, rect);
+//
+//    return touched;
+}
