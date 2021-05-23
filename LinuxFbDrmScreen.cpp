@@ -3,6 +3,7 @@
 
 #include "LinuxFbDrmScreen.h"
 #include "LinuxFbDrmDevice.h"
+#include "Painter.hpp"
 
 using namespace std;
 
@@ -48,7 +49,23 @@ bool LinuxFbDrmScreen::initialize()
 
 void LinuxFbDrmScreen::redraw()
 {
+    LinuxFbDrmDevice::Output *output(_mDevice->output(0));
 
+    // TODO: should write on ...fb[output->backFb] and not always 0!
+    Image *backWrapperImage = output->fb[0].wrapperImage;
+    if (backWrapperImage->isNull()) {
+        return;
+    }
+
+    Painter fbPainter(backWrapperImage);
+    fbPainter.begin();
+
+    // TODO: should take a targetRect instead of point and only draw the portions of mScreenImage that are dirty. But for that I need a concept for regions and dirty regions...
+    fbPainter.drawImage(Point(), mScreenImage);
+
+    fbPainter.end();
+
+    // TODO: swap buffers
 }
 
 void LinuxFbDrmScreen::redraw(Image *image)
