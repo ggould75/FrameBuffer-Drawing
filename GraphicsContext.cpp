@@ -4,7 +4,7 @@
 #include "DrmDevice.hpp"
 
 //GraphicsContext::GraphicsContext() : m_device(new LinuxFrameBuffer(0)), d_ptr(new GraphicsContextPrivate())
-GraphicsContext::GraphicsContext() : m_device(new DrmDevice(1)), d_ptr(new GraphicsContextPrivate())
+GraphicsContext::GraphicsContext() : m_device(new DrmDevice(0)), d_ptr(new GraphicsContextPrivate())
 {
     
 }

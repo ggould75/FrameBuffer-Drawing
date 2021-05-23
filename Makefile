@@ -1,2 +1,4 @@
+FLAGS=`pkg-config --cflags --libs libdrm`
+
 default:
-	g++ -o fbd FrameBuffer.cpp GraphicsContext.cpp GraphicsContext_p.cpp main.cpp
+	g++ -o fbd LinuxFrameBuffer.cpp GraphicsContext.cpp GraphicsContext_p.cpp DrmDevice.cpp main.cpp $(FLAGS)
