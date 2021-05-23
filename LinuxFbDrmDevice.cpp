@@ -7,8 +7,8 @@
 #include <iostream>
 #include <cassert>
 
-#include "LinuxFbDrmDevice.h"
 #include "Image.hpp"
+#include "LinuxFbDrmDevice.h"
 
 using namespace std;
 
@@ -147,9 +147,10 @@ bool LinuxFbDrmDevice::createFramebuffer(LinuxFbDrmDevice::Output *output, int b
 
     memset(fb.data, 0, fb.length);
     
-    fb.renderedImage = new Image(); // TODO
+    fb.wrapperImage = new Image(static_cast<unsigned char *>(fb.data), width, height, fb.pitch, 
+                                imageFormatForDrmFormat(output->drmFormat));
     
-    fprintf(stdout, "Framebuffer %u, pixel format: 0x%x, mapped at %p\n", fb.id, 32, fb.data);
+    fprintf(stdout, "Framebuffer %u, pixel format: 0x%x, strides:%d,%d,%d,%d, mapped at %p\n", fb.id, 32, strides[0], strides[1], strides[2], strides[3], fb.data);
     
     return true;
 }
@@ -237,8 +238,10 @@ LinuxFbDrmDevice::Output *LinuxFbDrmDevice::createOutputForConnector(drmModeResP
     
     vector<drmModeModeInfo> modes;
     modes.reserve(connector->count_modes);
+    
     cout << "Connector has " << connector->count_modes << " modes, crtc index: " << crtc 
          << ", crtcId: " << crtcId << endl;
+         
     for (int i = 0; i < connector->count_modes; i++) {
         const drmModeModeInfo &mode = connector->modes[i];
         cout << "mode " << i << ": " << mode.hdisplay << "x" << mode.vdisplay 
@@ -251,8 +254,8 @@ LinuxFbDrmDevice::Output *LinuxFbDrmDevice::createOutputForConnector(drmModeResP
     int width = selectedMode.hdisplay;
     int height = selectedMode.vdisplay;
     int refreshFreq = selectedMode.vrefresh;
-    cout << "Using mode " << selectedModeIndex << ": " << width << "x" << height
-             << '@' << refreshFreq << " hz" << endl;
+    
+    cout << "Using mode " << selectedModeIndex << ": " << width << "x" << height << '@' << refreshFreq << " hz" << endl;
     
     Output *output = new Output();
     output->connectorId = connector->connector_id;
@@ -260,14 +263,7 @@ LinuxFbDrmDevice::Output *LinuxFbDrmDevice::createOutputForConnector(drmModeResP
     output->modes = modes;
     output->oldCrtc = drmModeGetCrtc(_mDriFd, crtcId);
     output->resolution = Size(width, height);
- 
-//     Output output;
-//     output.connectorId = connector->connector_id;
-//     output.crtcId = crtcId;
-//     output.modes = modes;
-//     output.oldCrtc = drmModeGetCrtc(_mDriFd, crtcId);
-//     output.resolution = Size(width, height);
-//     
+   
     _mCrtcAllocator |= (1 << crtc);
     
     return output;

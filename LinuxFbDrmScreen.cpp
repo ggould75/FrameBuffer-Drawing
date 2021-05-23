@@ -6,32 +6,6 @@
 
 using namespace std;
 
-static int depthForDrmFormat(uint32_t drmFormat)
-{
-    switch (drmFormat) {
-        case DRM_FORMAT_RGB565:
-        case DRM_FORMAT_BGR565:
-            return 16;
-        default:
-            return 32;
-    }
-}
-
-static Image::Format imageFormatForDrmFormat(uint32_t drmFormat)
-{
-    switch (drmFormat) {
-        case DRM_FORMAT_RGB565:
-        case DRM_FORMAT_BGR565:
-            return Image::Format_RGB16;
-        case DRM_FORMAT_XRGB8888:
-        case DRM_FORMAT_XBGR8888:
-            return Image::Format_RGB32;
-        default:
-            assert(false && "Unhandled drm format");
-            return Image::Format_Invalid;
-    }
-}
-
 LinuxFbDrmScreen::LinuxFbDrmScreen() : _mDevice(nullptr) { }
 
 LinuxFbDrmScreen::~LinuxFbDrmScreen()

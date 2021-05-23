@@ -2,7 +2,9 @@
 #define LINUXFBDRMDEVICE_H
 
 #include <sys/mman.h>
+#include <stdint.h>
 
+#include <cassert>
 #include <vector>
 #include <iostream> // TODO: remove
 
@@ -35,13 +37,13 @@ public:
     static const short int kBufferCount = 2;
     
     struct Framebuffer {
-        Framebuffer() : id(0), handle(0), pitch(0), length(0), data(MAP_FAILED), renderedImage(nullptr) { }
+        Framebuffer() : id(0), handle(0), pitch(0), length(0), data(MAP_FAILED), wrapperImage(nullptr) { }
         uint32_t id;
         uint32_t handle;
         uint32_t pitch;
         size_t length;
         void *data;
-        Image *renderedImage; // TODO: you sure pointer?
+        Image *wrapperImage; // TODO: you sure pointer?
     };
     
     struct Output {
@@ -79,5 +81,31 @@ private:
     std::vector<Output> _mOutputs;
     uint32_t _mCrtcAllocator;
 };
+
+static Image::Format imageFormatForDrmFormat(uint32_t drmFormat)
+{
+    switch (drmFormat) {
+        case DRM_FORMAT_RGB565:
+        case DRM_FORMAT_BGR565:
+            return Image::Format_RGB16;
+        case DRM_FORMAT_XRGB8888:
+        case DRM_FORMAT_XBGR8888:
+            return Image::Format_RGB32;
+        default:
+            assert(false && "Unhandled drm format");
+            return Image::Format_Invalid;
+    }
+}
+
+static int depthForDrmFormat(uint32_t drmFormat)
+{
+    switch (drmFormat) {
+        case DRM_FORMAT_RGB565:
+        case DRM_FORMAT_BGR565:
+            return 16;
+        default:
+            return 32;
+    }
+}
 
 #endif // LINUXFBDRMDEVICE_H
