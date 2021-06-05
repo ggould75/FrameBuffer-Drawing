@@ -51,6 +51,8 @@ int DrmDevice::prepare(int fd)
         return -errno;
     }
 
+    cout << "Found #connectors: " << cardResources->count_connectors << ", #encoders: " << cardResources->count_encoders << endl;
+    
     for (i = 0; i < cardResources->count_connectors; ++i) {
         connector = drmModeGetConnector(fd, cardResources->connectors[i]);
         if (!connector) {
@@ -114,8 +116,12 @@ int DrmDevice::setupDevice(int fd, drmModeRes *res, drmModeConnector *conn, stru
     dev->width = conn->modes[0].hdisplay;
     dev->height = conn->modes[0].vdisplay;
 
-    printf("mode for connector %u is %ux%u\n", conn->connector_id, dev->width, dev->height);
-
+    printf("mode[0] for connector %u is %ux%u (has %d modes)\n", conn->connector_id, dev->width, dev->height, conn->count_modes);
+    for (unsigned int i = 1; i < conn->count_modes; i++) {
+        drmModeModeInfo mode = conn->modes[i];
+        cout << "   mode[" << i << "] " << mode.hdisplay << "x" << mode.vdisplay << "@" << mode.vrefresh << endl;
+    }
+    
     // Look for CRTC for the connector
     ret = findCrtc(fd, res, conn, dev);
     if (ret) {
