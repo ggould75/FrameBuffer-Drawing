@@ -54,6 +54,7 @@ private:
     struct modeset_dev *modeset_list {NULL};
     short int cardNumber;
     int fd {-1};
+	int ttyFd {-1};
 };
 
 #endif // DRMDEVICE_H

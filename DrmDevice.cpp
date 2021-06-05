@@ -3,7 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/ioctl.h>
 
+#include <linux/kd.h>
 #include <cassert>
 
 #include "DrmDevice.hpp"
@@ -16,20 +18,20 @@ DrmDevice::~DrmDevice()
 int DrmDevice::open()
 {
     char devicePath[16];
-    
+
     sprintf(devicePath, "/dev/dri/card%d", cardNumber);
     int fd = ::open(devicePath, O_RDWR);
     if (fd < 0) {
         cerr << "Error opening " << devicePath << endl;
         return -1;
     }
-    
+
     uint64_t hasDumbBuffers;
     if (drmGetCap(fd, DRM_CAP_DUMB_BUFFER, &hasDumbBuffers) < 0 || !hasDumbBuffers) {
         cerr << "DRM device " << devicePath << " does not support dumb buffers" << endl;
         return -1;
     }
-    
+
     return fd;
 }
 
@@ -45,7 +47,7 @@ int DrmDevice::prepare(int fd)
     if (!cardResources) {
         fprintf(stderr, "cannot retrieve DRM resources (%d): %m\n",
             errno);
-        
+
         return -errno;
     }
 
@@ -54,7 +56,7 @@ int DrmDevice::prepare(int fd)
         if (!connector) {
             fprintf(stderr, "cannot retrieve DRM connector %u:%u (%d): %m\n",
                 i, cardResources->connectors[i], errno);
-            
+
             continue;
         }
 
@@ -71,10 +73,10 @@ int DrmDevice::prepare(int fd)
                 fprintf(stderr, "cannot setup device for connector %u:%u (%d): %m\n",
                     i, cardResources->connectors[i], errno);
             }
-            
+
             free(dev);
             drmModeFreeConnector(connector);
-            
+
             continue;
         }
 
@@ -95,7 +97,7 @@ int DrmDevice::setupDevice(int fd, drmModeRes *res, drmModeConnector *conn, stru
     if (conn->connection != DRM_MODE_CONNECTED) {
         fprintf(stderr, "ignoring unused connector %u\n",
             conn->connector_id);
-        
+
         return -ENOENT;
     }
 
@@ -103,15 +105,15 @@ int DrmDevice::setupDevice(int fd, drmModeRes *res, drmModeConnector *conn, stru
     if (conn->count_modes == 0) {
         fprintf(stderr, "no valid mode for connector %u\n",
             conn->connector_id);
-        
+
         return -EFAULT;
     }
-    
+
     // Copy mode information into local structure
     memcpy(&dev->mode, &conn->modes[0], sizeof(dev->mode));
     dev->width = conn->modes[0].hdisplay;
     dev->height = conn->modes[0].vdisplay;
-    
+
     printf("mode for connector %u is %ux%u\n", conn->connector_id, dev->width, dev->height);
 
     // Look for CRTC for the connector
@@ -119,7 +121,7 @@ int DrmDevice::setupDevice(int fd, drmModeRes *res, drmModeConnector *conn, stru
     if (ret) {
         fprintf(stderr, "no valid crtc for connector %u\n",
             conn->connector_id);
-        
+
         return ret;
     }
 
@@ -128,7 +130,7 @@ int DrmDevice::setupDevice(int fd, drmModeRes *res, drmModeConnector *conn, stru
     if (ret) {
         fprintf(stderr, "cannot create framebuffer for connector %u\n",
             conn->connector_id);
-        
+
         return ret;
     }
 
@@ -208,7 +210,7 @@ int DrmDevice::findCrtc(int fd, drmModeRes *res, drmModeConnector *conn, struct 
 
     fprintf(stderr, "cannot find suitable CRTC for connector %u\n",
         conn->connector_id);
-    
+
     return -ENOENT;
 }
 
@@ -264,25 +266,30 @@ int DrmDevice::createFB(int fd, struct modeset_dev *dev)
     }
 
     /* clear the framebuffer to 0 */
-    memset(dev->map, 0, dev->size);
+    if (!memset(dev->map, 0, dev->size)) {
+        cerr << "Could not clear framebuffer" << endl;
+        goto err_fb;
+    }
+    cout << "fb created " << creq.width << "x" << creq.height << endl;
 
     return 0;
 
 err_fb:
     drmModeRmFB(fd, dev->fb);
-    
+    cerr << "Error creating fb" << endl;
+
 err_destroy:
     memset(&dreq, 0, sizeof(dreq));
     dreq.handle = dev->handle;
     drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
-        
+
     return ret;
 }
 
 int DrmDevice::setMode(int fd)
 {
     struct modeset_dev *iter;
-    
+
     for (iter = modeset_list; iter; iter = iter->next) {
         iter->saved_crtc = drmModeGetCrtc(fd, iter->crtc);
         int ret = drmModeSetCrtc(fd, iter->crtc, iter->fb, 0, 0,
@@ -290,11 +297,11 @@ int DrmDevice::setMode(int fd)
         if (ret) {
             fprintf(stderr, "cannot set CRTC for connector %u (%d): %m\n",
                 iter->conn, errno);
-            
+
             return -1;
         }
     }
-    
+
     return 0;
 }
 
@@ -333,6 +340,13 @@ void DrmDevice::cleanup(int fd)
         /* free allocated memory */
         free(iter);
     }
+
+    //if (ioctl(ttyFd, KDSETMODE, KD_TEXT) < 0) {
+    //	cerr << "Error restoring tty text mode" << endl;
+    //}
+
+    // Stop being master
+    //ioctl(fd, DRM_IOCTL_DROP_MASTER, 0);
 }
 
 // TODO: unused
@@ -343,22 +357,41 @@ bool DrmDevice::createFrameBuffer(int fd)
 
 void DrmDevice::swapBuffer()
 {
-    
+
 }
 
 // TODO: replace with int return value
 bool DrmDevice::initialize()
 {
+    // Become the master of the DRI device
+    // Commented as it errors
+    //if (ioctl(fd, DRM_IOCTL_SET_MASTER, 0) < 0) {
+    //	fprintf(stderr, "cannot become master (%d): %m\n", errno);
+    //	return false;
+    //}
+
+    // Commented as it errors (probably not opening the right tty
+    //ttyFd = ::open("/dev/tty0", O_RDWR);
+    //if (ttyFd < 0) {
+    //	cerr << "Error opening tty" << endl;
+    //	return false;
+    //}
+
+    //if (ioctl(ttyFd, KDSETMODE, KD_GRAPHICS) < 0) {
+    //	cerr << "Error setting graphics on tty" << endl;
+    //	return false;
+    //}
+
     fd = open();
     if (fd < 0) {
         return false;
     }
-    
+
     if (prepare(fd)) {
         ::close(fd);
         return false;
     }
-    
+
     if (setMode(fd)) {
         ::close(fd);
         return false;
@@ -370,6 +403,14 @@ bool DrmDevice::initialize()
 void DrmDevice::close()
 {
     cleanup(fd);
+
+    if (::close(fd)) {
+        cerr << "Could not close dri file" << endl;
+    }
+
+    //if (::close(ttyFd)) {
+    //	cerr << "Could not close tty file" << endl;
+    //}
 }
 
 void DrmDevice::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
@@ -384,7 +425,10 @@ void DrmDevice::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
 
 void DrmDevice::clearScreen()
 {
-    // TODO
+    assert(modeset_list);
+
+    struct modeset_dev *iter = modeset_list;
+	memset(iter->map, 0, iter->size);
 }
 
 long DrmDevice::modeset_dev::bufferIndexForCoordinates(int x, int y) 

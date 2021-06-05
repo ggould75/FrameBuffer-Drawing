@@ -7,7 +7,9 @@ int main(int argc, const char * argv[])
 {
     GraphicsContext gc = GraphicsContext();
     gc.setup();
-    
+ 
+ 	gc.clear();
+
     gc.drawPixel(100, 200, 0xFF, 0x00, 0x00);
     gc.drawPixel(100, 201, 0xFF, 0x00, 0x00);
     gc.drawPixel(100, 202, 0xFF, 0x00, 0x00);
@@ -25,19 +27,19 @@ int main(int argc, const char * argv[])
     gc.drawLine(900, 200, 900, 200);
     
     // rectangle
-    gc.drawLine(800, 300, 1800, 300);
-    gc.drawLine(1800, 300, 1800, 1000);
-    gc.drawLine(1800, 1000, 800, 1000);
-    gc.drawLine(800, 1000, 800, 300);
+//    gc.drawLine(800, 300, 1800, 300);
+//    gc.drawLine(1800, 300, 1800, 1000);
+//    gc.drawLine(1800, 1000, 800, 1000);
+//    gc.drawLine(800, 1000, 800, 300);
     
     gc.drawCircle(500, 200, 100);
     
     sleep(2);
     
-    for (int i = 0; i < 500; i++) {
-        gc.fillRect(2000, 300, 300, 150);
-        gc.clear();
-    }
+//    for (int i = 0; i < 500; i++) {
+//        gc.fillRect(2000, 300, 300, 150);
+//        gc.clear();
+//    }
     
     return 0;
 }
