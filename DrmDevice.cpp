@@ -97,16 +97,14 @@ int DrmDevice::setupDevice(int fd, drmModeRes *res, drmModeConnector *conn, stru
     int ret;
 
     if (conn->connection != DRM_MODE_CONNECTED) {
-        fprintf(stderr, "ignoring unused connector %u\n",
-            conn->connector_id);
+        fprintf(stderr, "ignoring unused connector %u\n", conn->connector_id);
 
         return -ENOENT;
     }
 
     // Make sure there's at least one valid mode
     if (conn->count_modes == 0) {
-        fprintf(stderr, "no valid mode for connector %u\n",
-            conn->connector_id);
+        fprintf(stderr, "no valid mode for connector %u\n", conn->connector_id);
 
         return -EFAULT;
     }
@@ -116,7 +114,9 @@ int DrmDevice::setupDevice(int fd, drmModeRes *res, drmModeConnector *conn, stru
     dev->width = conn->modes[0].hdisplay;
     dev->height = conn->modes[0].vdisplay;
 
-    printf("mode[0] for connector %u is %ux%u (has %d modes)\n", conn->connector_id, dev->width, dev->height, conn->count_modes);
+    printf("mode[0] for connector %u is %ux%u (has %d modes)\n",
+           conn->connector_id, dev->width, dev->height, conn->count_modes);
+
     for (unsigned int i = 1; i < conn->count_modes; i++) {
         drmModeModeInfo mode = conn->modes[i];
         cout << "   mode[" << i << "] " << mode.hdisplay << "x" << mode.vdisplay << "@" << mode.vrefresh << endl;
@@ -321,6 +321,8 @@ void DrmDevice::cleanup(int fd)
         iter = modeset_list;
         modeset_list = iter->next;
 
+	    cout << "Restoring original mode " << endl;
+
         /* restore saved CRTC configuration */
         drmModeSetCrtc(fd,
                     iter->saved_crtc->crtc_id,
@@ -331,8 +333,6 @@ void DrmDevice::cleanup(int fd)
                     1,
                     &iter->saved_crtc->mode);
         drmModeFreeCrtc(iter->saved_crtc);
-
-        /* unmap buffer */
         munmap(iter->map, iter->size);
 
         /* delete framebuffer */
@@ -347,9 +347,9 @@ void DrmDevice::cleanup(int fd)
         free(iter);
     }
 
-    //if (ioctl(ttyFd, KDSETMODE, KD_TEXT) < 0) {
-    //	cerr << "Error restoring tty text mode" << endl;
-    //}
+    if (ioctl(ttyFd, KDSETMODE, KD_TEXT) < 0) {
+    	cerr << "Error restoring tty text mode" << endl;
+    }
 
     // Stop being master
     //ioctl(fd, DRM_IOCTL_DROP_MASTER, 0);
@@ -377,16 +377,16 @@ bool DrmDevice::initialize()
     //}
 
     // Commented as it errors (probably not opening the right tty
-    //ttyFd = ::open("/dev/tty0", O_RDWR);
-    //if (ttyFd < 0) {
-    //	cerr << "Error opening tty" << endl;
-    //	return false;
-    //}
+    ttyFd = ::open("/dev/tty3", O_RDWR);
+    if (ttyFd < 0) {
+    	cerr << "Error opening tty" << endl;
+    	return false;
+    }
 
-    //if (ioctl(ttyFd, KDSETMODE, KD_GRAPHICS) < 0) {
-    //	cerr << "Error setting graphics on tty" << endl;
-    //	return false;
-    //}
+    if (ioctl(ttyFd, KDSETMODE, KD_GRAPHICS) < 0) {
+    	cerr << "Error setting graphics on tty" << endl;
+    	return false;
+    }
 
     fd = open();
     if (fd < 0) {
@@ -414,9 +414,9 @@ void DrmDevice::close()
         cerr << "Could not close dri file" << endl;
     }
 
-    //if (::close(ttyFd)) {
-    //	cerr << "Could not close tty file" << endl;
-    //}
+    if (::close(ttyFd)) {
+    	cerr << "Could not close tty file" << endl;
+    }
 }
 
 void DrmDevice::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
