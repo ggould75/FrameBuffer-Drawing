@@ -66,7 +66,6 @@ int DrmDevice::prepare(int fd)
         memset(dev, 0, sizeof(*dev));
         dev->conn = connector->connector_id;
 
-        // TODO: rename setupConnector() ?
         /* call helper function to prepare this connector */
         ret = setupDevice(fd, cardResources, connector, dev);
         if (ret) {
@@ -82,6 +81,8 @@ int DrmDevice::prepare(int fd)
             continue;
         }
 
+        cout << "Adding connector " << connector->connector_id << " to the list" << endl;
+        
         drmModeFreeConnector(connector);
         dev->next = modeset_list;
         modeset_list = dev;
@@ -109,7 +110,8 @@ int DrmDevice::setupDevice(int fd, drmModeRes *res, drmModeConnector *conn, stru
         return -EFAULT;
     }
 
-    // Copy mode information into local structure
+    // Copy mode[0] information into local structure
+    // Basically I just use the first available mode for the connector, which normally is the one with higher resolution
     memcpy(&dev->mode, &conn->modes[0], sizeof(dev->mode));
     dev->width = conn->modes[0].hdisplay;
     dev->height = conn->modes[0].vdisplay;
@@ -242,9 +244,11 @@ int DrmDevice::createFB(int fd, struct modeset_dev *dev)
     dev->size = creq.size;
     dev->handle = creq.handle;
 
-    /* create framebuffer object for the dumb-buffer */
-    ret = drmModeAddFB(fd, dev->width, dev->height, 24, 32, dev->stride,
-                dev->handle, &dev->fb);
+    /* create framebuffer object for the dumb-buffer. 
+     * Since dev->width and height are from the first mode available, the framebuffer is created for this size,
+     * and its id stored in dev->fb
+     */
+    ret = drmModeAddFB(fd, dev->width, dev->height, 24, 32, dev->stride, dev->handle, &dev->fb);
     if (ret) {
         fprintf(stderr, "cannot create framebuffer (%d): %m\n",
             errno);
@@ -263,6 +267,7 @@ int DrmDevice::createFB(int fd, struct modeset_dev *dev)
         goto err_fb;
     }
 
+    // The framebuffer location is now pointed in memory at location dev->map
     dev->map = (uint8_t *)mmap(0, dev->size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, mreq.offset);
     if (dev->map == MAP_FAILED) {
         fprintf(stderr, "cannot mmap dumb buffer (%d): %m\n",
@@ -271,12 +276,14 @@ int DrmDevice::createFB(int fd, struct modeset_dev *dev)
         goto err_fb;
     }
 
-    /* clear the framebuffer to 0 */
+    // Clear all framebuffer space to 0, equivalent to blanking the screen
     if (!memset(dev->map, 0, dev->size)) {
         cerr << "Could not clear framebuffer" << endl;
         goto err_fb;
     }
-    cout << "fb created " << creq.width << "x" << creq.height << endl;
+    
+    cout << "fb (id: " << dev->fb << ") created " << creq.width << "x" << creq.height 
+         << ", Bytes size: " << dev->size <<  endl;
 
     return 0;
 
@@ -298,6 +305,8 @@ int DrmDevice::setMode(int fd)
 
     for (iter = modeset_list; iter; iter = iter->next) {
         iter->saved_crtc = drmModeGetCrtc(fd, iter->crtc);
+        cout << "drmModeSetCrtc for fb id: " << iter->fb 
+             << ", mode " << iter->mode.hdisplay << "x" << iter->mode.vdisplay << endl;
         int ret = drmModeSetCrtc(fd, iter->crtc, iter->fb, 0, 0,
                         &iter->conn, 1, &iter->mode);
         if (ret) {
@@ -421,7 +430,6 @@ void DrmDevice::close()
 
 void DrmDevice::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)
 {
-    //drawTest(modeset_list);
     assert(modeset_list);
 
     struct modeset_dev *iter = modeset_list;
