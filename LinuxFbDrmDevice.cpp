@@ -268,6 +268,8 @@ LinuxFbDrmDevice::Output *LinuxFbDrmDevice::createOutputForConnector(drmModeResP
    
     _mCrtcAllocator |= (1 << crtc);
     
+    cout << "oldCrtc crtc_id: " << output->oldCrtc->crtc_id << ", " << output->oldCrtc->width << "x" << output->oldCrtc->height << endl;
+    
     return output;
 }
 
