@@ -150,7 +150,8 @@ bool LinuxFbDrmDevice::createFramebuffer(LinuxFbDrmDevice::Output *output, int b
     fb.wrapperImage = new Image(static_cast<unsigned char *>(fb.data), width, height, fb.pitch, 
                                 imageFormatForDrmFormat(output->drmFormat));
     
-    fprintf(stdout, "Framebuffer %u, pixel format: 0x%x, strides:%d,%d,%d,%d, mapped at %p\n", fb.id, 32, strides[0], strides[1], strides[2], strides[3], fb.data);
+    fprintf(stdout, "Framebuffer %u, pixel format: 0x%x, strides:%d,%d,%d,%d, Bytes size: %lu, mapped at %p\n", 
+            fb.id, 32, strides[0], strides[1], strides[2], strides[3], fb.length, fb.data);
     
     return true;
 }
