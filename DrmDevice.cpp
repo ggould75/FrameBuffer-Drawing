@@ -281,10 +281,10 @@ int DrmDevice::createFB(int fd, struct modeset_dev *dev)
         cerr << "Could not clear framebuffer" << endl;
         goto err_fb;
     }
-    
-    cout << "fb (id: " << dev->fb << ") created " << creq.width << "x" << creq.height 
-         << ", Bytes size: " << dev->size <<  endl;
 
+    fprintf(stdout, "Framebuffer %u, pixel format: 0x%x, stride:%d, Bytes size: %lu, mapped at %p\n", 
+            dev->fb, creq.bpp, dev->stride, dev->size, dev->map);
+    
     return 0;
 
 err_fb:
