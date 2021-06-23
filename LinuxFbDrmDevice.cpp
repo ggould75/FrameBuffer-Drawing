@@ -255,7 +255,9 @@ LinuxFbDrmDevice::Output *LinuxFbDrmDevice::createOutputForConnector(drmModeResP
     int height = selectedMode.vdisplay;
     int refreshFreq = selectedMode.vrefresh;
     
-    cout << "Using mode " << selectedModeIndex << ": " << width << "x" << height << '@' << refreshFreq << " hz" << endl;
+    cout << "Using mode " << selectedModeIndex << ": " << width << "x" << height << '@' << refreshFreq << " hz, " 
+         << "connector id: " << connector->connector_id << ", crt id: " << crtcId 
+         << endl;
     
     Output *output = new Output();
     output->connectorId = connector->connector_id;
