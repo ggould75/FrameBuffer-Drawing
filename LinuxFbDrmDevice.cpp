@@ -145,10 +145,7 @@ bool LinuxFbDrmDevice::createFramebuffer(LinuxFbDrmDevice::Output *output, int b
         return false;
     }
 
-    if (!memset(fb.data, 0, fb.length)) {
-        cerr << "Failed to clear framebuffer" << endl;
-        return false;
-    }
+    memset(fb.data, 0, fb.length);
     
     fb.wrapperImage = new Image(static_cast<unsigned char *>(fb.data), width, height, fb.pitch, 
                                 imageFormatForDrmFormat(output->drmFormat));
