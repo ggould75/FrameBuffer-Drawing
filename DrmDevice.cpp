@@ -307,9 +307,11 @@ int DrmDevice::setMode(int fd)
         iter->saved_crtc = drmModeGetCrtc(fd, iter->crtc);
         cout << "drmModeSetCrtc for fb id: " << iter->fb 
              << ", mode " << iter->mode.hdisplay << "x" << iter->mode.vdisplay 
+             << ", switching to crt_id " << iter->crtc
              << ", saved_crtc... crtc_id: " << iter->saved_crtc->crtc_id << ", " 
              << iter->saved_crtc->width << "x" << iter->saved_crtc->height
              << endl;
+
         int ret = drmModeSetCrtc(fd, iter->crtc, iter->fb, 0, 0,
                         &iter->conn, 1, &iter->mode);
         if (ret) {
