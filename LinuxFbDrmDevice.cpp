@@ -190,6 +190,13 @@ void LinuxFbDrmDevice::destroyFramebuffer(LinuxFbDrmDevice::Output *output, int 
 void LinuxFbDrmDevice::setMode()
 {
     for (Output &output : _mOutputs) {
+        cout << "drmModeSetCrtc for fb id: " << output.fb[0].id
+             << ", mode " << output.resolution.width() << "x" << output.resolution.height() 
+             << ", switching to crt_id " << output.crtcId
+             << ", saved_crtc... crtc_id: " << output.oldCrtc->crtc_id << ", " 
+             << output.oldCrtc->width << "x" << output.oldCrtc->height
+             << endl;
+        
         drmModeModeInfo &modeInfo(output.modes[output.mode]);
         if (drmModeSetCrtc(_mDriFd, output.crtcId, output.fb[0].id, 0, 0,
                             &output.connectorId, 1, &modeInfo) == -1) {
