@@ -10,6 +10,8 @@
 
 #include "DrmDevice.hpp"
 
+//#define TRY_USING_TTY
+
 DrmDevice::~DrmDevice()
 {
     close();
@@ -361,9 +363,11 @@ void DrmDevice::cleanup(int fd)
         free(iter);
     }
 
+#ifdef TRY_USING_TTY
     if (ioctl(ttyFd, KDSETMODE, KD_TEXT) < 0) {
     	cerr << "Error restoring tty text mode" << endl;
     }
+#endif
 
     // Stop being master
     //ioctl(fd, DRM_IOCTL_DROP_MASTER, 0);
@@ -390,7 +394,8 @@ bool DrmDevice::initialize()
     //	return false;
     //}
 
-    // Commented as it errors (probably not opening the right tty
+#ifdef TRY_USING_TTY
+    // Commented as it errors (probably not opening the right tty)
     ttyFd = ::open("/dev/tty3", O_RDWR);
     if (ttyFd < 0) {
     	cerr << "Error opening tty" << endl;
@@ -401,6 +406,7 @@ bool DrmDevice::initialize()
     	cerr << "Error setting graphics on tty" << endl;
     	return false;
     }
+#endif
 
     fd = open();
     if (fd < 0) {
@@ -428,9 +434,11 @@ void DrmDevice::close()
         cerr << "Could not close dri file" << endl;
     }
 
+#ifdef TRY_USING_TTY
     if (::close(ttyFd)) {
     	cerr << "Could not close tty file" << endl;
     }
+#endif
 }
 
 void DrmDevice::drawPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b)

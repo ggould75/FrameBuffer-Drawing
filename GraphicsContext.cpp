@@ -3,8 +3,10 @@
 #include "LinuxFrameBuffer.hpp"
 #include "DrmDevice.hpp"
 
+// If all connectors are ignored ("ignoring connector...") or you see "Assertion `modeset_list' failed", it means you have to change cardNumber parameter (0 or 1).
+// For some reasons it keeps changing to one of the 2 values at every reboot (?!?)
 //GraphicsContext::GraphicsContext() : m_device(new LinuxFrameBuffer(0)), d_ptr(new GraphicsContextPrivate())
-GraphicsContext::GraphicsContext() : m_device(new DrmDevice(0)), d_ptr(new GraphicsContextPrivate())
+GraphicsContext::GraphicsContext() : m_device(new DrmDevice(1)), d_ptr(new GraphicsContextPrivate())
 {
     
 }
